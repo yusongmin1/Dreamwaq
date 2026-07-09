@@ -1,3 +1,0 @@
-isaacgym
-rsl-rl
-matplotlib

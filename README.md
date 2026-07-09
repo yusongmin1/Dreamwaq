@@ -41,7 +41,7 @@ python legged_gym/scripts/train.py --task=m20 --headless
 ```
 
 ```bash
-python legged_gym/scripts/train.py --task=go2w --headless
+python legged_gym/scripts/train.py --task=m20_big --headless
 ```
 
 ```bash
@@ -55,7 +55,7 @@ python legged_gym/scripts/play.py --task=m20 --num_envs=50
 ```
 
 ```bash
-python legged_gym/scripts/play.py --task=go2w --num_envs=50
+python legged_gym/scripts/play.py --task=m20_big --num_envs=50
 ```
 
 ```bash

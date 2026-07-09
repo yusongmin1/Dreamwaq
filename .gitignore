@@ -1,0 +1,30 @@
+# Python packaging
+*.egg-info/
+.eggs/
+
+# Byte-compiled / cache (never commit; remove from index if already tracked)
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.cpython-*.pyc
+
+# Build artifacts
+build/
+dist/
+
+# Virtual envs
+.venv/
+venv/
+
+# .logs/
+# logs/
+
+.envs_/
+envs_/
+
+.g1_29/
+g1_29/
+
+.logs/
+logs/

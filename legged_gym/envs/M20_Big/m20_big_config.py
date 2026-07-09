@@ -1,6 +1,6 @@
 from legged_gym.envs.base.base_config import BaseConfig
 
-class M20_Cfg_Yu(BaseConfig):
+class M20_Cfg_Yu_Big(BaseConfig):
     class env:
         num_envs = 4096
         num_observations = 57
@@ -52,55 +52,59 @@ class M20_Cfg_Yu(BaseConfig):
         class highplatform:
             lin_vel_x = [0.3, 0.6]   # min max [m/s]
             lin_vel_y = [0.0, 0.0]   # forward only
-            heading = [-0.0, 0.0]  # -10 deg to 10 deg [rad], resampled to commands[:, 3]
+            heading = [-0.174533, 0.174533]  # -10 deg to 10 deg [rad], resampled to commands[:, 3]
     class init_state:
-        pos = [0.0, 0.0, 0.60] # x,y,z [m]
+        pos = [0.0, 0.0,1.0] # x,y,z [m]
         rot = [0.0, 0.0, 0.0, 1.0] # x,y,z,w [quat]
         lin_vel = [0.0, 0.0, 0.0]  # x,y,z [m/s]
         ang_vel = [0.0, 0.0, 0.0]  # x,y,z [rad/s]
+
         default_joint_angles = { # = target angles [rad] when action = 0.0
-            'fl_hipx_joint': 0.0,   # [rad]
-            'fl_hipy_joint': -0.6,   # [rad]
-            'fl_knee_joint': 1.0,  # [rad]
-            'fl_wheel_joint': -0.0,   # [rad]
+            'FL_hip_joint': 0.0,
+            'RL_hip_joint': 0.0,
+            'FR_hip_joint': 0.0 ,
+            'RR_hip_joint': 0.0,
 
-            'fr_hipx_joint': 0.0,     # [rad]
-            'fr_hipy_joint': -0.6,   # [rad]
-            'fr_knee_joint': 1.0,     # [rad]
-            'fr_wheel_joint': 0.0,   # [rad]
+            'FL_thigh_joint': 0.6,
+            'RL_thigh_joint': -0.6,
+            'FR_thigh_joint': 0.6,
+            'RR_thigh_joint': -0.6,
 
-            'hl_hipx_joint': 0.0,   # [rad]
-            'hl_hipy_joint': 0.6,    # [rad]
-            'hl_knee_joint': -1.0,  # [rad]
-            'hl_wheel_joint': 0.0,    # [rad]
+            'FL_calf_joint': -1.0,
+            'RL_calf_joint': 1.0,
+            'FR_calf_joint': -1.0,
+            'RR_calf_joint': 1.0,
 
-            'hr_hipx_joint': 0.0,   # [rad]
-            'hr_hipy_joint': 0.6,    # [rad]
-            'hr_knee_joint': -1.0,  # [rad]
-            'hr_wheel_joint': 0.0,    # [rad]
+            'FL_foot_joint':0.0,
+            'RL_foot_joint':0.0,
+            'FR_foot_joint':0.0,
+            'RR_foot_joint':0.0,
+
         }
 
     class control:
         # PD Drive parameters:
         control_type = 'P'
-        stiffness = {'hipx_joint': 80.,'hipy_joint': 80.,'knee_joint': 80.,'wheel_joint': 0.}  # [N*m/rad]
-        damping   = {'hipx_joint': 2.0,'hipy_joint': 2.0,'knee_joint': 2.0,'wheel_joint': 0.6}     # [N*m*s/rad]
+        # stiffness = {'hipx_joint': 20.,'hipy_joint': 20.,'knee_joint': 20.,'wheel_joint': 0.}  # [N*m/rad]
+        # damping   = {'hipx_joint': 0.5,'hipy_joint': 0.5,'knee_joint': 0.5,'wheel_joint': 0.6}     # [N*m*s/rad]
+        stiffness = {'hip_joint': 160.,'thigh_joint': 160.,'calf_joint': 160.,'foot_joint': 0.}  # [N*m/rad]
+        damping   = {'hip_joint': 5.0,'thigh_joint': 5.0,'calf_joint': 5.0,'foot_joint': 0.6}  
         action_scale = 0.25
         vel_scale = 5.0
         decimation = 4
     class asset:
-        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/m20/urdf/m20.urdf'
+        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/m20_big/urdf/m20_big.urdf'
         name = "m20"
         foot_name = "wheel"
-        wheel_name =["wheel"] 
-        penalize_contacts_on = ["hipx", "hipy","knee","base"]
+        wheel_name =["foot"] 
+        penalize_contacts_on = ["hip","thigh", "calf",]
         terminate_after_contacts_on = []
         disable_gravity = False
         collapse_fixed_joints = True # merge bodies connected by fixed joints. Specific fixed joints can be kept by adding " <... dont_collapse="true">
         fix_base_link = False # fixe the base of the robot
         default_dof_drive_mode = 3 # see GymDofDriveModeFlags (0 is none, 1 is pos tgt, 2 is vel tgt, 3 effort)
         self_collisions = 0 # 1 to disable, 0 to enable...bitwise filter
-        replace_cylinder_with_capsule = False # replace collision cylinders with capsules, leads to faster/more stable simulation
+        replace_cylinder_with_capsule = True # replace collision cylinders with capsules, leads to faster/more stable simulation
         flip_visual_attachments = False # Some .obj meshes must be flipped from y-up to z-up
         
         density = 0.001
@@ -117,17 +121,9 @@ class M20_Cfg_Yu(BaseConfig):
         randomize_restitution = True
         restitution_range = [0.0,1.0]
         push_robots = True
-        push_interval_s = 10
+        push_interval_s = 4
         max_push_vel_xy = 1.0
         max_push_ang_vel = 0.6
-        upward_drag = False
-        upward_drag_cmd_threshold = 0.5      # command planar speed [m/s]
-        upward_drag_vel_threshold = 0.2      # actual base planar speed [m/s]
-        upward_drag_z_force = 10000.0         # upward force [N]
-        upward_drag_z_vel = 1.0              # upward velocity impulse [m/s]
-        upward_drag_forward_offset = 0.1     # force application point, 10cm in front of base [m]
-        upward_drag_max_count = 4           # max drag attempts per episode
-        upward_drag_cooldown_steps = 100     # steps between drag attempts
         randomize_base_mass = True
         added_base_mass_range = [-1,5]
         randomize_link_mass = True
@@ -148,15 +144,14 @@ class M20_Cfg_Yu(BaseConfig):
 
     class rewards:
         class scales:
-            termination = -0.8 # 25/8/23 zsy说不用加
             tracking_lin_vel = 2.0 # 惩罚当前机器人在X、Y方向速度与命令不一致
             tracking_ang_vel = 1.0 # 惩罚当前机器人在角度转向速度与命令不一致
             lin_vel_z = -2 # 惩罚机器人在Z轴上的速度 对应现象为机器人上下起伏很大
             ang_vel_xy = -0.05 # 惩罚机器人在X轴和Y轴上的角速度 对应现象为遏制机器人左右晃动和前后晃动
             orientation = -0.2 # 强烈鼓励机器人与初始姿态的基座方向一致
-            base_height=-10.0
+            base_height=-2.0
             torques = -0.000005#
-            dof_vel = -5e-4
+            dof_vel = -1e-4
             dof_acc = -2.5e-7
             collision = -1.
             stumble = -0.1
@@ -164,17 +159,16 @@ class M20_Cfg_Yu(BaseConfig):
             stand_still=-0.5
             dof_pos_limits = -5.0
             hip_default = -0.5
+            rear_calf_angle = -2.0 # 惩罚后腿calf关节角度小于0.2(仅非高台env)
             run_still=-0.05
             highplatform_yaw = -2.0
-            highplatform_world_vel = -10.0 # 高台世界系线速度>0.75时大惩罚
         only_positive_rewards = True # if true negative total rewards are clipped at zero (avoids early termination problems)
         tracking_sigma = 0.25 # tracking reward = exp(-error^2/sigma)
-        highplatform_world_speed_limit = 0.75 # [m/s] world-frame linear speed limit on highplatform
         soft_dof_pos_limit = 0.9 # percentage of urdf limits, values above this limit are penalized
         soft_dof_vel_limit = 0.9
         soft_torque_limit = 0.9
-        base_height_target = 0.52
-        max_contact_force = 200. # forces above this value are penalized
+        base_height_target = 0.55
+        max_contact_force = 600. # forces above this value are penalized
 
     class normalization:
         class obs_scales:
@@ -222,7 +216,7 @@ class M20_Cfg_Yu(BaseConfig):
             default_buffer_size_multiplier = 5
             contact_collection = 2 # 0: never, 1: last sub-step, 2: all sub-steps (default=2)
 
-class M20_PPO_Yu( BaseConfig ):
+class M20_PPO_Yu_Big( BaseConfig ):
     seed = 1
     runner_class_name = 'DreamWaQRunner'
     class policy:
@@ -250,8 +244,8 @@ class M20_PPO_Yu( BaseConfig ):
         algorithm_class_name = "PPO_DreamWaQ"
         num_steps_per_env = 24 # per iteration
         run_name = ''
-        experiment_name = 'M20'
-        save_interval = 100 
+        experiment_name = 'M20_Big'
+        save_interval = 200
         max_iterations = 300000
         resume = False
         load_run = -1 # -1 = last run

@@ -94,7 +94,7 @@ class Terrain:
                                 length=self.width_per_env_pixels,
                                 vertical_scale=self.cfg.vertical_scale,
                                 horizontal_scale=self.cfg.horizontal_scale)
-        slope = difficulty * 0.4 +0.1
+        slope = difficulty * 0.6 +0.15
         step_height = 0.05 + 0.20 * difficulty
         step_height_high=0.20+0.80 * difficulty
         discrete_obstacles_height = 0.05 + difficulty * 0.25
