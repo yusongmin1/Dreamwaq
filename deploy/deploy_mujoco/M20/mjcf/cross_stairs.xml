@@ -1,6 +1,5 @@
-<mujoco model="cross_stairs_1_4_7_10">
-  <include file="m20_big.xml"/>
-  <!-- Terrain: Cross Stairs Arch, Levels: 1,4,7,10. Cross Layout: Center Gap 2.0m. Arch step height: 0.0800 Arch step height: 0.2000 Arch step height: 0.2300 Arch step height: 0.1700 -->
+<mujoco model="cross_stairs">
+  <include file="M20.xml"/>
   <statistic center="0 0 0.1" extent="0.8" />
   <visual>
     <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0" />
@@ -11,18 +10,23 @@
     <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072" />
     <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300" />
     <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.0" />
-    <texture name="tex_label_1" type="2d" file="./imgs/label_1.png" />
-    <material name="mat_label_1" texture="tex_label_1" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
-    <texture name="tex_label_7" type="2d" file="./imgs/label_7.png" />
-    <material name="mat_label_7" texture="tex_label_7" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
-    <texture name="tex_label_10" type="2d" file="./imgs/label_10.png" />
-    <material name="mat_label_10" texture="tex_label_10" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
-    <texture name="tex_label_4" type="2d" file="./imgs/label_4.png" />
-    <material name="mat_label_4" texture="tex_label_4" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
+    <texture name="tex_stair_8cm" type="2d" file="./imgs/label_stair_8cm.png" />
+    <material name="mat_stair_8cm" texture="tex_stair_8cm" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
+    <texture name="tex_stair_17cm" type="2d" file="./imgs/label_stair_17cm.png" />
+    <material name="mat_stair_17cm" texture="tex_stair_17cm" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
+    <texture name="tex_stair_20cm" type="2d" file="./imgs/label_stair_20cm.png" />
+    <material name="mat_stair_20cm" texture="tex_stair_20cm" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
+    <texture name="tex_stair_23cm" type="2d" file="./imgs/label_stair_23cm.png" />
+    <material name="mat_stair_23cm" texture="tex_stair_23cm" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
   </asset>
   <worldbody>
     <light pos="0 0 1.5" dir="0 0 -1" directional="true" />
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" />
+
+    <geom pos="-2.155 1.8982025386783976e-17 0.082" type="box" size="0.5 0.17532467532467533 0.0001" quat="0.7071067811865476 0.0 0.0 0.7071067811865475" contype="0" conaffinity="0" group="1" material="mat_stair_8cm" rgba="1 1 1 1" />
+    <geom pos="9.491012693391988e-18 2.155 0.202" type="box" size="0.5 0.17532467532467533 0.0001" quat="1.0 0.0 0.0 0.0" contype="0" conaffinity="0" group="1" material="mat_stair_20cm" rgba="1 1 1 1" />
+    <geom pos="2.155 0.0 0.232" type="box" size="0.5 0.17532467532467533 0.0001" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" contype="0" conaffinity="0" group="1" material="mat_stair_23cm" rgba="1 1 1 1" />
+    <geom pos="9.491012693391988e-18 -2.155 0.172" type="box" size="0.5 0.17532467532467533 0.0001" quat="6.123233995736766e-17 0.0 0.0 -1.0" contype="0" conaffinity="0" group="1" material="mat_stair_17cm" rgba="1 1 1 1" />
     <geom pos="-2.155 1.8982025386783976e-17 0.04" type="box" size="0.155 1.75 0.04" quat="6.123233995736766e-17 0.0 0.0 1.0" />
     <geom pos="-2.465 5.694607616035192e-17 0.12" type="box" size="0.155 1.75 0.04" quat="6.123233995736766e-17 0.0 0.0 1.0" />
     <geom pos="-2.775 9.491012693391986e-17 0.2" type="box" size="0.155 1.75 0.04" quat="6.123233995736766e-17 0.0 0.0 1.0" />
@@ -39,7 +43,6 @@
     <geom pos="-7.474999999999999 6.704941225331758e-16 0.19999999999999996" type="box" size="0.155 1.75 0.04" quat="6.123233995736766e-17 0.0 0.0 1.0" />
     <geom pos="-7.784999999999998 7.084581733067436e-16 0.11999999999999995" type="box" size="0.155 1.75 0.04" quat="6.123233995736766e-17 0.0 0.0 1.0" />
     <geom pos="-8.094999999999999 7.464222240803115e-16 0.03999999999999995" type="box" size="0.155 1.75 0.04" quat="6.123233995736766e-17 0.0 0.0 1.0" />
-    <geom pos="-2.155 1.8982025386783976e-17 0.082" type="box" size="0.5 0.17532467532467533 0.0001" quat="0.7071067811865476 0.0 0.0 0.7071067811865475" contype="0" conaffinity="0" group="1" material="mat_label_1" rgba="1 1 1 1" />
     <geom pos="9.491012693391988e-18 2.155 0.1" type="box" size="0.155 1.75 0.1" quat="0.7071067811865476 0.0 0.0 0.7071067811865475" />
     <geom pos="2.847303808017596e-17 2.465 0.30000000000000004" type="box" size="0.155 1.75 0.1" quat="0.7071067811865476 0.0 0.0 0.7071067811865475" />
     <geom pos="4.745506346695993e-17 2.775 0.5" type="box" size="0.155 1.75 0.1" quat="0.7071067811865476 0.0 0.0 0.7071067811865475" />
@@ -56,7 +59,6 @@
     <geom pos="3.352470612665879e-16 7.474999999999999 0.49999999999999994" type="box" size="0.155 1.75 0.1" quat="0.7071067811865476 0.0 0.0 0.7071067811865475" />
     <geom pos="3.542290866533718e-16 7.784999999999998 0.29999999999999993" type="box" size="0.155 1.75 0.1" quat="0.7071067811865476 0.0 0.0 0.7071067811865475" />
     <geom pos="3.7321111204015577e-16 8.094999999999999 0.09999999999999992" type="box" size="0.155 1.75 0.1" quat="0.7071067811865476 0.0 0.0 0.7071067811865475" />
-    <geom pos="9.491012693391988e-18 2.155 0.202" type="box" size="0.5 0.17532467532467533 0.0001" quat="1.0 0.0 0.0 0.0" contype="0" conaffinity="0" group="1" material="mat_label_7" rgba="1 1 1 1" />
     <geom pos="2.155 0.0 0.115" type="box" size="0.155 1.75 0.115" quat="1.0 0.0 0.0 0.0" />
     <geom pos="2.465 0.0 0.34500000000000003" type="box" size="0.155 1.75 0.115" quat="1.0 0.0 0.0 0.0" />
     <geom pos="2.775 0.0 0.5750000000000001" type="box" size="0.155 1.75 0.115" quat="1.0 0.0 0.0 0.0" />
@@ -73,7 +75,6 @@
     <geom pos="7.474999999999999 0.0 0.5750000000000002" type="box" size="0.155 1.75 0.115" quat="1.0 0.0 0.0 0.0" />
     <geom pos="7.784999999999998 0.0 0.3450000000000002" type="box" size="0.155 1.75 0.115" quat="1.0 0.0 0.0 0.0" />
     <geom pos="8.094999999999999 0.0 0.11500000000000019" type="box" size="0.155 1.75 0.115" quat="1.0 0.0 0.0 0.0" />
-    <geom pos="2.155 0.0 0.232" type="box" size="0.5 0.17532467532467533 0.0001" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" contype="0" conaffinity="0" group="1" material="mat_label_10" rgba="1 1 1 1" />
     <geom pos="9.491012693391988e-18 -2.155 0.08499999999999999" type="box" size="0.155 1.75 0.08499999999999999" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" />
     <geom pos="2.847303808017596e-17 -2.465 0.255" type="box" size="0.155 1.75 0.08499999999999999" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" />
     <geom pos="4.745506346695993e-17 -2.775 0.425" type="box" size="0.155 1.75 0.08499999999999999" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" />
@@ -90,6 +91,5 @@
     <geom pos="3.352470612665879e-16 -7.474999999999999 0.425" type="box" size="0.155 1.75 0.08499999999999999" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" />
     <geom pos="3.542290866533718e-16 -7.784999999999998 0.255" type="box" size="0.155 1.75 0.08499999999999999" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" />
     <geom pos="3.7321111204015577e-16 -8.094999999999999 0.08500000000000002" type="box" size="0.155 1.75 0.08499999999999999" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" />
-    <geom pos="9.491012693391988e-18 -2.155 0.172" type="box" size="0.5 0.17532467532467533 0.0001" quat="6.123233995736766e-17 0.0 0.0 -1.0" contype="0" conaffinity="0" group="1" material="mat_label_4" rgba="1 1 1 1" />
   </worldbody>
 </mujoco>

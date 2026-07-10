@@ -10,10 +10,10 @@ from legged_gym.envs.base.base_task import BaseTask
 from legged_gym.utils.terrain import Terrain
 from legged_gym.utils.math import quat_apply_yaw, wrap_to_pi, torch_rand_sqrt_float
 from legged_gym.utils.helpers import class_to_dict
-from legged_gym.envs.M20.m20_config import M20_Cfg_Yu
+from legged_gym.envs.M20_stairs.m20_stairs_config import M20_Cfg_Yu_Stairs
 
-class M20_Robot(BaseTask):
-    def __init__(self, cfg: M20_Cfg_Yu, sim_params, physics_engine, sim_device, headless):
+class M20_Robot_Stairs(BaseTask):
+    def __init__(self, cfg: M20_Cfg_Yu_Stairs, sim_params, physics_engine, sim_device, headless):
         """ Parses the provided config file,
             calls create_sim() (which creates, simulation, terrain and environments),
             initilizes pytorch buffers used during training
@@ -100,8 +100,6 @@ class M20_Robot(BaseTask):
         self.base_lin_vel[:] = quat_rotate_inverse(self.base_quat, self.root_states[:, 7:10])
         self.base_ang_vel[:] = quat_rotate_inverse(self.base_quat, self.root_states[:, 10:13])
         self.projected_gravity[:] = quat_rotate_inverse(self.base_quat, self.gravity_vec)
-        if self.cfg.domain_rand.upward_drag:
-            self._apply_upward_drag()
         self._post_physics_step_callback()
 
         # compute observations, rewards, resets, ...
@@ -119,9 +117,11 @@ class M20_Robot(BaseTask):
         """ Check if environments need to be reset
         """
         self.reset_buf = torch.any(torch.norm(self.contact_forces[:, self.termination_contact_indices, :], dim=-1) > 1., dim=1)
-        self.reset_buf |= self.projected_gravity[:, 2] > 0.
         self.time_out_buf = self.episode_length_buf > self.max_episode_length # no terminal reward for time-outs
         self.reset_buf |= self.time_out_buf
+        contact_flag = torch.mean(self.root_states[:, 2].unsqueeze(1) - self.measured_heights, dim=1)
+        self.base_contact_buf=torch.any(contact_flag.unsqueeze(1) < 0.20,dim=1)
+        self.reset_buf |= self.base_contact_buf
 
     def reset_idx(self, env_ids):
         """ Reset some environments.
@@ -158,8 +158,6 @@ class M20_Robot(BaseTask):
         self.last_actions[env_ids] = 0.
         self.last_dof_vel[env_ids] = 0.
         self.feet_air_time[env_ids] = 0.
-        self.upward_drag_count[env_ids] = 0
-        self.upward_drag_cooldown[env_ids] = 0
         self.episode_length_buf[env_ids] = 0
         self.reset_buf[env_ids] = 1
         self._reset_latency_buffer(env_ids)
@@ -351,9 +349,6 @@ class M20_Robot(BaseTask):
         Args:
             env_ids (List[int]): Environments ids for which new commands are needed
         """
-        if len(env_ids) == 0:
-            return
-
         self.commands[env_ids, 0] = torch_rand_float(self.command_ranges["lin_vel_x"][0], self.command_ranges["lin_vel_x"][1], (len(env_ids), 1), device=self.device).squeeze(1)
         self.commands[env_ids, 1] = torch_rand_float(self.command_ranges["lin_vel_y"][0], self.command_ranges["lin_vel_y"][1], (len(env_ids), 1), device=self.device).squeeze(1)
         if self.cfg.commands.heading_command:
@@ -362,20 +357,6 @@ class M20_Robot(BaseTask):
             self.commands[env_ids, 2] = torch_rand_float(self.command_ranges["ang_vel_yaw"][0], self.command_ranges["ang_vel_yaw"][1], (len(env_ids), 1), device=self.device).squeeze(1)
 
         self.commands[env_ids, :2] *= (torch.norm(self.commands[env_ids, :2], dim=1) > 0.2).unsqueeze(1)
-
-        if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
-            return
-
-        hp_cfg = self.cfg.commands.highplatform
-        highplatform_mask = self.terrain_types[env_ids] >= self.highplatform_col_min
-        hp_env_ids = env_ids[highplatform_mask]
-        if len(hp_env_ids) == 0:
-            return
-
-        self.commands[hp_env_ids, 0] = torch_rand_float(hp_cfg.lin_vel_x[0], hp_cfg.lin_vel_x[1], (len(hp_env_ids), 1), device=self.device).squeeze(1)
-        self.commands[hp_env_ids, 1] = torch_rand_float(hp_cfg.lin_vel_y[0], hp_cfg.lin_vel_y[1], (len(hp_env_ids), 1), device=self.device).squeeze(1)
-        if self.cfg.commands.heading_command:
-            self.commands[hp_env_ids, 3] = torch_rand_float(hp_cfg.heading[0], hp_cfg.heading[1], (len(hp_env_ids), 1), device=self.device).squeeze(1)
 
     def _compute_torques(self, actions):
         """ Compute torques from actions.
@@ -445,58 +426,6 @@ class M20_Robot(BaseTask):
                                
 
 
-    def _apply_upward_drag(self):
-        """Apply upward force on highplatform when stuck; up to max_count times with cooldown between attempts."""
-        if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
-            return
-
-        cfg = self.cfg.domain_rand
-        self.upward_drag_cooldown = torch.clamp(self.upward_drag_cooldown - 1, min=0)
-
-        cmd_speed = torch.norm(self.commands[:, :2], dim=1)
-        actual_speed = torch.norm(self.base_lin_vel[:, :2], dim=1)
-        is_highplatform = self.terrain_types >= self.highplatform_col_min
-        cmd_ok = cmd_speed > cfg.upward_drag_cmd_threshold
-        vel_low = actual_speed < cfg.upward_drag_vel_threshold
-        ready = self.upward_drag_cooldown == 0
-        has_chances = self.upward_drag_count < cfg.upward_drag_max_count
-
-        need_drag = is_highplatform & cmd_ok & vel_low & ready & has_chances
-        drag_env_ids = need_drag.nonzero(as_tuple=False).flatten()
-        if len(drag_env_ids) == 0:
-            return
-
-        self.upward_drag_count[drag_env_ids] += 1
-        self.upward_drag_cooldown[drag_env_ids] = cfg.upward_drag_cooldown_steps
-
-        forces = torch.zeros(self.num_envs, self.num_bodies, 3, device=self.device)
-        force_positions = self.rigid_body_states[:, :, 0:3].clone()
-
-        offset = torch.tensor(
-            [cfg.upward_drag_forward_offset, 0.0, 0.0], device=self.device,
-        )
-        forward_offset = quat_apply(
-            self.base_quat[drag_env_ids],
-            offset.unsqueeze(0).expand(len(drag_env_ids), -1),
-        )
-        base_pos = self.rigid_body_states[drag_env_ids, self.base_body_index, 0:3]
-        force_positions[drag_env_ids, self.base_body_index] = base_pos + forward_offset
-        forces[drag_env_ids, self.base_body_index, 2] = cfg.upward_drag_z_force
-
-        self.gym.apply_rigid_body_force_at_pos_tensors(
-            self.sim,
-            gymtorch.unwrap_tensor(forces),
-            gymtorch.unwrap_tensor(force_positions),
-            gymapi.ENV_SPACE,
-        )
-
-        self.root_states[drag_env_ids, 9] += cfg.upward_drag_z_vel
-        self.gym.set_actor_root_state_tensor(self.sim, gymtorch.unwrap_tensor(self.root_states))
-        self.base_lin_vel[drag_env_ids] = quat_rotate_inverse(
-            self.base_quat[drag_env_ids], self.root_states[drag_env_ids, 7:10],
-        )
-
-
     def _push_robots(self):
         """ Random pushes the robots. Emulates an impulse by setting a randomized base velocity. 
         """
@@ -534,8 +463,8 @@ class M20_Robot(BaseTask):
         """
         # If the tracking reward is above 80% of the maximum, increase the range of commands
         if torch.mean(self.episode_sums["tracking_lin_vel"][env_ids]) / self.max_episode_length > 0.8 * self.reward_scales["tracking_lin_vel"]:
-            self.command_ranges["lin_vel_x"][0] = np.clip(self.command_ranges["lin_vel_x"][0] - 0.05, -self.cfg.commands.max_curriculum, 0.)
-            self.command_ranges["lin_vel_x"][1] = np.clip(self.command_ranges["lin_vel_x"][1] + 0.05, 0., self.cfg.commands.max_curriculum)
+            self.command_ranges["lin_vel_x"][0] = np.clip(self.command_ranges["lin_vel_x"][0] - 0.5, -self.cfg.commands.max_curriculum, 0.)
+            self.command_ranges["lin_vel_x"][1] = np.clip(self.command_ranges["lin_vel_x"][1] + 0.5, 0., self.cfg.commands.max_curriculum)
 
     def _get_noise_scale_vec(self):
         """ Sets a vector used to scale the noise added to the observations.
@@ -565,11 +494,9 @@ class M20_Robot(BaseTask):
         actor_root_state = self.gym.acquire_actor_root_state_tensor(self.sim)
         dof_state_tensor = self.gym.acquire_dof_state_tensor(self.sim)
         net_contact_forces = self.gym.acquire_net_contact_force_tensor(self.sim)
-        rigid_body_tensor = self.gym.acquire_rigid_body_state_tensor(self.sim)
         self.gym.refresh_dof_state_tensor(self.sim)
         self.gym.refresh_actor_root_state_tensor(self.sim)
         self.gym.refresh_net_contact_force_tensor(self.sim)
-        self.gym.refresh_rigid_body_state_tensor(self.sim)
 
         # create some wrapper tensors for different slices
         self.root_states = gymtorch.wrap_tensor(actor_root_state)
@@ -578,7 +505,6 @@ class M20_Robot(BaseTask):
         self.dof_vel = self.dof_state.view(self.num_envs, self.num_dof, 2)[..., 1]
         self.base_quat = self.root_states[:, 3:7]
         self.contact_forces = gymtorch.wrap_tensor(net_contact_forces).view(self.num_envs, -1, 3) # shape: num_envs, num_bodies, xyz axis
-        self.rigid_body_states = gymtorch.wrap_tensor(rigid_body_tensor).view(self.num_envs, self.num_bodies, 13)
         # initialize some data used later on
         self.common_step_counter = 0
         self.extras = {}
@@ -594,8 +520,6 @@ class M20_Robot(BaseTask):
         self.last_last_actions = torch.zeros(self.num_envs, self.num_actions, dtype=torch.float, device=self.device, requires_grad=False)  
         self.feet_air_time = torch.zeros(self.num_envs, self.feet_indices.shape[0], dtype=torch.float, device=self.device, requires_grad=False)
         self.last_contacts = torch.zeros(self.num_envs, len(self.feet_indices), dtype=torch.bool, device=self.device, requires_grad=False)
-        self.upward_drag_count = torch.zeros(self.num_envs, dtype=torch.long, device=self.device, requires_grad=False)
-        self.upward_drag_cooldown = torch.zeros(self.num_envs, dtype=torch.long, device=self.device, requires_grad=False)
         self.base_lin_vel = quat_rotate_inverse(self.base_quat, self.root_states[:, 7:10])
         self.base_ang_vel = quat_rotate_inverse(self.base_quat, self.root_states[:, 10:13])
         self.projected_gravity = quat_rotate_inverse(self.base_quat, self.gravity_vec)
@@ -758,8 +682,6 @@ class M20_Robot(BaseTask):
         print("###feet_names:",feet_names)
         print("###wheels name:",wheel_names)
 
-        self.base_body_index = self.gym.find_asset_rigid_body_index(robot_asset, "base_link")
-
         base_init_state_list = self.cfg.init_state.pos + self.cfg.init_state.rot + self.cfg.init_state.lin_vel + self.cfg.init_state.ang_vel
         self.base_init_state = to_torch(base_init_state_list, device=self.device, requires_grad=False)
         start_pose = gymapi.Transform()
@@ -841,10 +763,6 @@ class M20_Robot(BaseTask):
         self.command_ranges = class_to_dict(self.cfg.commands.ranges)
         if self.cfg.terrain.mesh_type not in ['heightfield', 'trimesh']:
             self.cfg.terrain.curriculum = False
-        else:
-            terrain_props = np.cumsum(self.cfg.terrain.terrain_proportions)
-            # Column j maps to terrain via choice = j / num_cols + 0.001; highplatform is the last type.
-            self.highplatform_col_min = int(np.ceil((terrain_props[-2] - 0.001) * self.cfg.terrain.num_cols))
         self.max_episode_length_s = self.cfg.env.episode_length_s
         self.max_episode_length = np.ceil(self.max_episode_length_s / self.dt)
         self.cfg.domain_rand.push_interval = np.ceil(self.cfg.domain_rand.push_interval_s / self.dt)
@@ -937,11 +855,9 @@ class M20_Robot(BaseTask):
         return torch.sum(torch.square(self.projected_gravity[:, :2]), dim=1)
 
     def _reward_base_height(self):
-        # Penalize base height away from target; disabled on highplatform
+        # Penalize base height away from target
         base_height = torch.mean(self.root_states[:, 2].unsqueeze(1) - self.measured_heights, dim=1)
-        reward = torch.square(base_height - self.cfg.rewards.base_height_target)
-
-        return reward
+        return torch.square(base_height - self.cfg.rewards.base_height_target)
 
     def _reward_joint_power(self):
         return torch.sum((torch.abs(self.dof_vel)*torch.abs(self.torques)),dim=1)
@@ -999,13 +915,9 @@ class M20_Robot(BaseTask):
         return torch.exp(-lin_vel_error/self.cfg.rewards.tracking_sigma)
 
     def _reward_tracking_ang_vel(self):
-        # Tracking of angular velocity commands (yaw); disabled on highplatform (use highplatform_yaw instead)
+        # Tracking of angular velocity commands (yaw)
         ang_vel_error = torch.square(self.commands[:, 2] - self.base_ang_vel[:, 2])
-        reward = torch.exp(-ang_vel_error/self.cfg.rewards.tracking_sigma)
-        if self.cfg.terrain.mesh_type in ["heightfield", "trimesh"]:
-            is_hp = self.terrain_types >= self.highplatform_col_min
-            reward = reward * (~is_hp).float()
-        return reward
+        return torch.exp(-ang_vel_error/self.cfg.rewards.tracking_sigma)
 
     def _reward_stand_still(self):
         # Penalize motion at zero commands        
@@ -1025,32 +937,8 @@ class M20_Robot(BaseTask):
         return hip_err
     
     def _reward_run_still(self):
-        # Penalize motion at running commands; disabled on highplatform
+        # Penalize motion at running commands        
         dof_err = self.dof_pos - self.default_dof_pos
         dof_err[:,self.wheel_indices] = 0
-        reward = torch.sum(torch.abs(dof_err), dim=1) * (torch.norm(self.commands[:, :2], dim=1) > 0.1)
-        if self.cfg.terrain.mesh_type in ["heightfield", "trimesh"]:
-            is_hp = self.terrain_types >= self.highplatform_col_min
-            reward = reward * (~is_hp).float()
-        return reward
-
-    def _reward_highplatform_yaw(self):
-        """Penalize actual yaw deviation from commanded heading on highplatform."""
-        if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
-            return torch.zeros(self.num_envs, device=self.device)
-        is_hp = self.terrain_types >= self.highplatform_col_min
-        forward = quat_apply(self.base_quat, self.forward_vec)
-        actual_heading = torch.atan2(forward[:, 1], forward[:, 0])
-        commanded_heading = self.commands[:, 3]
-        heading_error = wrap_to_pi(commanded_heading - actual_heading)
-        return torch.square(heading_error) * is_hp.float()
-
-    def _reward_highplatform_world_vel(self):
-        """Penalize excessive world-frame linear speed on highplatform."""
-        if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
-            return torch.zeros(self.num_envs, device=self.device)
-        is_hp = self.terrain_types >= self.highplatform_col_min
-        world_speed = torch.abs(self.root_states[:, 9])
-        excess = torch.clamp(world_speed - self.cfg.rewards.highplatform_world_speed_limit, min=0.)
-        return torch.square(excess) * is_hp.float()
+        return torch.sum(torch.abs(dof_err), dim=1) * (torch.norm(self.commands[:, :2], dim=1) > 0.1)
     

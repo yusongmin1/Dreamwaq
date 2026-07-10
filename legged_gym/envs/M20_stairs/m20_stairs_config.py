@@ -1,6 +1,6 @@
 from legged_gym.envs.base.base_config import BaseConfig
 
-class M20_Cfg_Yu(BaseConfig):
+class M20_Cfg_Yu_Stairs(BaseConfig):
     class env:
         num_envs = 4096
         num_observations = 57
@@ -31,16 +31,15 @@ class M20_Cfg_Yu(BaseConfig):
         max_init_terrain_level = 5 # starting curriculum state
         terrain_length = 8.
         terrain_width = 8.
-        num_rows= 40 # number of terrain rows (levels)
+        num_rows= 10 # number of terrain rows (levels)
         num_cols = 20 # number of terrain cols (types)
-        # terrain types: [smooth slope, rough slope, stairs up, stairs down, highplatform]
-        terrain_proportions = [0.1, 0.15, 0.25, 0.25, 0.1,0.15]
-        # terrain_proportions =   [0., 0., 0., 0., 0.,1.0]
+        # terrain types: [smooth slope, rough slope, stairs up, stairs down, discrete]
+        terrain_proportions = [0.1, 0.15, 0.3, 0.25, 0.15,0.0]
         # trimesh only:
         slope_treshold = 0.75 # slopes above this threshold will be corrected to vertical surfaces
     class commands:
-        curriculum = True
-        max_curriculum = 1.5
+        curriculum = False
+        max_curriculum = 1.2
         num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
         resampling_time = 10. # time before command are changed[s]
         heading_command = True # if true: compute ang vel command from heading error
@@ -49,10 +48,6 @@ class M20_Cfg_Yu(BaseConfig):
             lin_vel_y = [-0.6,0.6]   # min max [m/s]
             ang_vel_yaw = [-1, 1]    # min max [rad/s]
             heading = [-3.14, 3.14]
-        class highplatform:
-            lin_vel_x = [0.3, 0.6]   # min max [m/s]
-            lin_vel_y = [0.0, 0.0]   # forward only
-            heading = [-0.0, 0.0]  # -10 deg to 10 deg [rad], resampled to commands[:, 3]
     class init_state:
         pos = [0.0, 0.0, 0.60] # x,y,z [m]
         rot = [0.0, 0.0, 0.0, 1.0] # x,y,z,w [quat]
@@ -120,14 +115,6 @@ class M20_Cfg_Yu(BaseConfig):
         push_interval_s = 10
         max_push_vel_xy = 1.0
         max_push_ang_vel = 0.6
-        upward_drag = False
-        upward_drag_cmd_threshold = 0.5      # command planar speed [m/s]
-        upward_drag_vel_threshold = 0.2      # actual base planar speed [m/s]
-        upward_drag_z_force = 10000.0         # upward force [N]
-        upward_drag_z_vel = 1.0              # upward velocity impulse [m/s]
-        upward_drag_forward_offset = 0.1     # force application point, 10cm in front of base [m]
-        upward_drag_max_count = 4           # max drag attempts per episode
-        upward_drag_cooldown_steps = 100     # steps between drag attempts
         randomize_base_mass = True
         added_base_mass_range = [-1,5]
         randomize_link_mass = True
@@ -144,18 +131,19 @@ class M20_Cfg_Yu(BaseConfig):
 
         add_cmd_action_latency = True
         randomize_cmd_action_latency = True
-        range_cmd_action_latency = [1, 3]
+        range_cmd_action_latency = [0, 3]
 
     class rewards:
         class scales:
-            tracking_lin_vel = 2.0 # 惩罚当前机器人在X、Y方向速度与命令不一致
-            tracking_ang_vel = 1.0 # 惩罚当前机器人在角度转向速度与命令不一致
+            termination = -0.8 # 25/8/23 zsy说不用加
+            tracking_lin_vel = 3.0 # 惩罚当前机器人在X、Y方向速度与命令不一致
+            tracking_ang_vel = 1.5 # 惩罚当前机器人在角度转向速度与命令不一致
             lin_vel_z = -2 # 惩罚机器人在Z轴上的速度 对应现象为机器人上下起伏很大
             ang_vel_xy = -0.05 # 惩罚机器人在X轴和Y轴上的角速度 对应现象为遏制机器人左右晃动和前后晃动
-            orientation = -0.2 # 强烈鼓励机器人与初始姿态的基座方向一致
+            orientation = -0.5 # 强烈鼓励机器人与初始姿态的基座方向一致
             base_height=-10.0
             torques = -0.000005#
-            dof_vel = -5e-4
+            dof_vel = -1e-6
             dof_acc = -2.5e-7
             collision = -1.
             # stumble = -0.1
@@ -164,11 +152,8 @@ class M20_Cfg_Yu(BaseConfig):
             dof_pos_limits = -5.0
             hip_default = -0.5
             run_still=-0.05
-            highplatform_yaw = -2.0
-            highplatform_world_vel = -10.0 # 高台世界系线速度>0.75时大惩罚
         only_positive_rewards = True # if true negative total rewards are clipped at zero (avoids early termination problems)
         tracking_sigma = 0.25 # tracking reward = exp(-error^2/sigma)
-        highplatform_world_speed_limit = 0.75 # [m/s] world-frame linear speed limit on highplatform
         soft_dof_pos_limit = 0.9 # percentage of urdf limits, values above this limit are penalized
         soft_dof_vel_limit = 0.9
         soft_torque_limit = 0.9
@@ -221,7 +206,7 @@ class M20_Cfg_Yu(BaseConfig):
             default_buffer_size_multiplier = 5
             contact_collection = 2 # 0: never, 1: last sub-step, 2: all sub-steps (default=2)
 
-class M20_PPO_Yu( BaseConfig ):
+class M20_PPO_Yu_Stairs( BaseConfig ):
     seed = 1
     runner_class_name = 'DreamWaQRunner'
     class policy:
@@ -249,7 +234,7 @@ class M20_PPO_Yu( BaseConfig ):
         algorithm_class_name = "PPO_DreamWaQ"
         num_steps_per_env = 24 # per iteration
         run_name = ''
-        experiment_name = 'M20'
+        experiment_name = 'm20_stairs'
         save_interval = 100 
         max_iterations = 300000
         resume = False

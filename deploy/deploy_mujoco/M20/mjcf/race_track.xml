@@ -18,17 +18,9 @@
     <hfield name="perlin_hfield" size="1.0 0.75 0.2 0.2" file="height_field.png" />
     <hfield name="image_hfield" size="1.0 1.0 0.02 0.1" file="unitree_hfield.png" />
     <texture type="2d" name="rough_tex" builtin="checker" rgb1="0.7 0.7 0.7" rgb2="0.3 0.3 0.3" width="100" height="100"/>
-    <texture name="tex_label_1" type="2d" file="./imgs/label_1.png" />
-    <texture name="tex_label_7" type="2d" file="./imgs/label_7.png" />
-    <texture name="tex_label_10" type="2d" file="./imgs/label_10.png" />
-    <texture name="tex_label_4" type="2d" file="./imgs/label_4.png" />
     <texture name="wood_tex" type="2d" builtin="flat" rgb1="0.55 0.35 0.2" width="512" height="512" />
     <texture name="sponge_tex" type="2d" builtin="flat" rgb1="1.0 0.7 0.7" width="512" height="512" />
     <material name="rough_mat" texture="rough_tex" texrepeat="10 10"/>
-    <material name="mat_label_1" texture="tex_label_1" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
-    <material name="mat_label_7" texture="tex_label_7" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
-    <material name="mat_label_10" texture="tex_label_10" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
-    <material name="mat_label_4" texture="tex_label_4" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
     <material name="wood_mat" texture="wood_tex" specular="0.2" shininess="0.1" rgba="1 1 1 1" />
     <material name="mat_sponge" texture="sponge_tex" specular="0.1" shininess="0.1" rgba="1 0.7 0.7 1" />
     <texture name="tex_label_60" type="2d" file="./imgs/label_60.png" />
@@ -57,6 +49,28 @@
     <material name="mat_label_115" texture="tex_label_115" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
     <texture name="tex_label_120" type="2d" file="./imgs/label_120.png" />
     <material name="mat_label_120" texture="tex_label_120" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
+    <texture name="tex_stair_8cm" type="2d" file="./imgs/label_stair_8cm.png" />
+    <material name="mat_stair_8cm" texture="tex_stair_8cm" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
+    <texture name="tex_stair_17cm" type="2d" file="./imgs/label_stair_17cm.png" />
+    <material name="mat_stair_17cm" texture="tex_stair_17cm" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
+    <texture name="tex_stair_20cm" type="2d" file="./imgs/label_stair_20cm.png" />
+    <material name="mat_stair_20cm" texture="tex_stair_20cm" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
+    <texture name="tex_stair_23cm" type="2d" file="./imgs/label_stair_23cm.png" />
+    <material name="mat_stair_23cm" texture="tex_stair_23cm" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
+    <texture name="tex_slope_8_36deg" type="2d" file="./imgs/label_slope_8.36deg.png" />
+    <material name="mat_slope_8_36deg" texture="tex_slope_8_36deg" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
+    <texture name="tex_slope_16_07deg" type="2d" file="./imgs/label_slope_16.07deg.png" />
+    <material name="mat_slope_16_07deg" texture="tex_slope_16_07deg" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
+    <texture name="tex_slope_23_22deg" type="2d" file="./imgs/label_slope_23.22deg.png" />
+    <material name="mat_slope_23_22deg" texture="tex_slope_23_22deg" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
+    <texture name="tex_slope_29_68deg" type="2d" file="./imgs/label_slope_29.68deg.png" />
+    <material name="mat_slope_29_68deg" texture="tex_slope_29_68deg" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
+    <texture name="tex_slope_35deg" type="2d" file="./imgs/label_slope_35deg.png" />
+    <material name="mat_slope_35deg" texture="tex_slope_35deg" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
+    <texture name="tex_slope_45deg" type="2d" file="./imgs/label_slope_45deg.png" />
+    <material name="mat_slope_45deg" texture="tex_slope_45deg" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
+    <texture name="tex_slope_40deg" type="2d" file="./imgs/label_slope_40deg.png" />
+    <material name="mat_slope_40deg" texture="tex_slope_40deg" specular="0" shininess="0" emission="1" texrepeat="1 1" rgba="1 1 1 1" />
   </asset>
 
   <worldbody>
@@ -165,11 +179,6 @@
       quat="0.9914449 0. -0.1305262 0." contype="1" conaffinity="1"/>
     <geom type="box" size="3.864 0.5 0.025" pos="34.77491374180905 -3.0 0.5"
       quat="0.9848078 0. -0.1736482 0." contype="1" conaffinity="1"/>
-    <!-- slope 35deg / 45deg -->
-    <geom type="box" size="3.864 0.5 0.025" pos="35.27491374180905 -4.5 2.2163"
-      quat="0.9537170 0. -0.3007058 0." contype="1" conaffinity="1"/>
-    <geom type="box" size="3.864 0.5 0.025" pos="34.77491374180905 -6.0 2.7323"
-      quat="0.9238795 0. -0.3826834 0." contype="1" conaffinity="1"/>
     <geom pos="34.27491374180905 0.0 0.25" type="cylinder" size="0.5 0.25 0.25" quat="1.0 0.0 0.0 0.0" />
     <geom pos="34.77491374180905 2.0 0.5" type="box" size="1.5 0.75 0.05" quat="0.968912421710645 0.0 -0.24740395925452296 0.0" />
     <geom pos="33.974913741809054 4.0 0.075" type="box" size="0.1 0.75 0.075" quat="1.0 0.0 0.0 0.0" />
@@ -274,7 +283,11 @@
     <geom pos="32.272431360980896 6.5701617398718914 -0.25" type="box" size="0.26691018196306854 0.2535040767291905 0.26963989926936244" quat="0.9956469229609891 -0.050958369126028226 -0.03839181101974538 0.06794496494188768" />
     <geom type="hfield" hfield="perlin_hfield" pos="31.27491374180905 4.0 0.0" quat="1.0 0.0 0.0 0.0" />
     <geom type="hfield" hfield="image_hfield" pos="31.27491374180905 2.0 0.0" quat="0.7073882691671999 0.0 0.0 -0.706825181105366" />
-    <!-- cross_stairs -->
+
+    <geom pos="50.23391374180905 1.8982025386783976e-17 0.082" type="box" size="0.5 0.17532467532467533 0.0001" quat="0.7071067811865476 0.0 0.0 0.7071067811865475" contype="0" conaffinity="0" group="1" material="mat_stair_8cm" rgba="1 1 1 1" />
+    <geom pos="52.38891374180905 2.155 0.202" type="box" size="0.5 0.17532467532467533 0.0001" quat="1.0 0.0 0.0 0.0" contype="0" conaffinity="0" group="1" material="mat_stair_20cm" rgba="1 1 1 1" />
+    <geom pos="54.54391374180905 0.0 0.232" type="box" size="0.5 0.17532467532467533 0.0001" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" contype="0" conaffinity="0" group="1" material="mat_stair_23cm" rgba="1 1 1 1" />
+    <geom pos="52.38891374180905 -2.155 0.172" type="box" size="0.5 0.17532467532467533 0.0001" quat="6.123233995736766e-17 0.0 0.0 -1.0" contype="0" conaffinity="0" group="1" material="mat_stair_17cm" rgba="1 1 1 1" />
     <geom pos="50.23391374180905 1.8982025386783976e-17 0.04" type="box" size="0.155 1.75 0.04" quat="6.123233995736766e-17 0.0 0.0 1.0" />
     <geom pos="49.923913741809045 5.694607616035192e-17 0.12" type="box" size="0.155 1.75 0.04" quat="6.123233995736766e-17 0.0 0.0 1.0" />
     <geom pos="49.61391374180905 9.491012693391986e-17 0.2" type="box" size="0.155 1.75 0.04" quat="6.123233995736766e-17 0.0 0.0 1.0" />
@@ -291,7 +304,6 @@
     <geom pos="44.91391374180905 6.704941225331758e-16 0.19999999999999996" type="box" size="0.155 1.75 0.04" quat="6.123233995736766e-17 0.0 0.0 1.0" />
     <geom pos="44.60391374180905 7.084581733067436e-16 0.11999999999999995" type="box" size="0.155 1.75 0.04" quat="6.123233995736766e-17 0.0 0.0 1.0" />
     <geom pos="44.29391374180905 7.464222240803115e-16 0.03999999999999995" type="box" size="0.155 1.75 0.04" quat="6.123233995736766e-17 0.0 0.0 1.0" />
-    <geom pos="50.23391374180905 1.8982025386783976e-17 0.082" type="box" size="0.5 0.17532467532467533 0.0001" quat="0.7071067811865476 0.0 0.0 0.7071067811865475" contype="0" conaffinity="0" group="1" material="mat_label_1" rgba="1 1 1 1" />
     <geom pos="52.38891374180905 2.155 0.1" type="box" size="0.155 1.75 0.1" quat="0.7071067811865476 0.0 0.0 0.7071067811865475" />
     <geom pos="52.38891374180905 2.465 0.30000000000000004" type="box" size="0.155 1.75 0.1" quat="0.7071067811865476 0.0 0.0 0.7071067811865475" />
     <geom pos="52.38891374180905 2.775 0.5" type="box" size="0.155 1.75 0.1" quat="0.7071067811865476 0.0 0.0 0.7071067811865475" />
@@ -308,7 +320,6 @@
     <geom pos="52.38891374180905 7.474999999999999 0.49999999999999994" type="box" size="0.155 1.75 0.1" quat="0.7071067811865476 0.0 0.0 0.7071067811865475" />
     <geom pos="52.38891374180905 7.784999999999998 0.29999999999999993" type="box" size="0.155 1.75 0.1" quat="0.7071067811865476 0.0 0.0 0.7071067811865475" />
     <geom pos="52.38891374180905 8.094999999999999 0.09999999999999992" type="box" size="0.155 1.75 0.1" quat="0.7071067811865476 0.0 0.0 0.7071067811865475" />
-    <geom pos="52.38891374180905 2.155 0.202" type="box" size="0.5 0.17532467532467533 0.0001" quat="1.0 0.0 0.0 0.0" contype="0" conaffinity="0" group="1" material="mat_label_7" rgba="1 1 1 1" />
     <geom pos="54.54391374180905 0.0 0.115" type="box" size="0.155 1.75 0.115" quat="1.0 0.0 0.0 0.0" />
     <geom pos="54.85391374180905 0.0 0.34500000000000003" type="box" size="0.155 1.75 0.115" quat="1.0 0.0 0.0 0.0" />
     <geom pos="55.16391374180905 0.0 0.5750000000000001" type="box" size="0.155 1.75 0.115" quat="1.0 0.0 0.0 0.0" />
@@ -325,7 +336,6 @@
     <geom pos="59.86391374180905 0.0 0.5750000000000002" type="box" size="0.155 1.75 0.115" quat="1.0 0.0 0.0 0.0" />
     <geom pos="60.173913741809045 0.0 0.3450000000000002" type="box" size="0.155 1.75 0.115" quat="1.0 0.0 0.0 0.0" />
     <geom pos="60.48391374180905 0.0 0.11500000000000019" type="box" size="0.155 1.75 0.115" quat="1.0 0.0 0.0 0.0" />
-    <geom pos="54.54391374180905 0.0 0.232" type="box" size="0.5 0.17532467532467533 0.0001" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" contype="0" conaffinity="0" group="1" material="mat_label_10" rgba="1 1 1 1" />
     <geom pos="52.38891374180905 -2.155 0.08499999999999999" type="box" size="0.155 1.75 0.08499999999999999" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" />
     <geom pos="52.38891374180905 -2.465 0.255" type="box" size="0.155 1.75 0.08499999999999999" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" />
     <geom pos="52.38891374180905 -2.775 0.425" type="box" size="0.155 1.75 0.08499999999999999" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" />
@@ -342,24 +352,35 @@
     <geom pos="52.38891374180905 -7.474999999999999 0.425" type="box" size="0.155 1.75 0.08499999999999999" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" />
     <geom pos="52.38891374180905 -7.784999999999998 0.255" type="box" size="0.155 1.75 0.08499999999999999" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" />
     <geom pos="52.38891374180905 -8.094999999999999 0.08500000000000002" type="box" size="0.155 1.75 0.08499999999999999" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" />
-    <geom pos="52.38891374180905 -2.155 0.172" type="box" size="0.5 0.17532467532467533 0.0001" quat="6.123233995736766e-17 0.0 0.0 -1.0" contype="0" conaffinity="0" group="1" material="mat_label_4" rgba="1 1 1 1" />
-    <!-- cross_slope -->
+
+    <geom pos="72.55443238845788 7.266192354141525e-17 0.08924094950084102" type="box" size="1.0 0.35064935064935066 0.001" quat="0.7052247002012548 0.05155698038142243 0.05155698038142242 0.7052247002012547" contype="0" conaffinity="0" group="1" material="mat_slope_8_36deg" rgba="1 1 1 1" />
+    <geom pos="75.1477620210671 2.5506129155545008 0.23838921373370156" type="box" size="1.0 0.35064935064935066 0.001" quat="0.9795413125474028 0.20124317879846595 0.0 0.0" contype="0" conaffinity="0" group="1" material="mat_slope_23_22deg" rgba="1 1 1 1" />
+    <geom pos="77.66803797709467 0.0 0.2988593809462753" type="box" size="1.0 0.35064935064935066 0.001" quat="0.6835161428585028 0.1811233901290355 -0.18112339012903547 -0.6835161428585027" contype="0" conaffinity="0" group="1" material="mat_slope_29_68deg" rgba="1 1 1 1" />
+    <geom pos="75.1477620210671 -2.5760114649293357 0.16797259380613377" type="box" size="1.0 0.35064935064935066 0.001" quat="6.063148280875342e-17 8.557029219681535e-18 -0.13974689233890575 -0.9901872580889023" contype="0" conaffinity="0" group="1" material="mat_slope_16_07deg" rgba="1 1 1 1" />
     <geom pos="71.64049016986054 1.8458756480250123e-16 0.1710316244452101" type="box" size="1.5161201304646015 1.75 0.05" quat="6.106936001461366e-17 0.07291258089041118 -4.464607940250726e-18 0.9973383355451144" />
-    <geom pos="72.55443238845788 7.266192354141525e-17 0.08924094950084102" type="box" size="1.0 0.35064935064935066 0.001" quat="0.7052247002012548 0.05155698038142243 0.05155698038142242 0.7052247002012547" contype="0" conaffinity="0" group="1" material="mat_label_1" rgba="1 1 1 1" />
     <geom pos="69.3977620210671 4.592425496802575e-16 0.39100000000000007" type="box" size="0.75 1.75 0.05" quat="6.123233995736766e-17 0.0 0.0 1.0" />
     <geom pos="67.15503387227365 7.338975345580137e-16 0.1710316244452101" type="box" size="1.5161201304646015 1.75 0.05" quat="6.106936001461366e-17 -0.07291258089041118 4.464607940250726e-18 0.9973383355451144" />
     <geom pos="75.1477620210671 3.519712600750146 0.5975498817012911" type="box" size="1.6322047206156463 1.75 0.05" quat="0.69264030455464 0.1423004163959321 -0.14230041639593213 0.6926403045546399" />
-    <geom pos="75.1477620210671 2.5506129155545008 0.23838921373370156" type="box" size="1.0 0.35064935064935066 0.001" quat="0.9795413125474028 0.20124317879846595 0.0 0.0" contype="0" conaffinity="0" group="1" material="mat_label_7" rgba="1 1 1 1" />
     <geom pos="75.1477620210671 5.75 1.2369999999999999" type="box" size="0.75 1.75 0.05" quat="0.7071067811865476 0.0 0.0 0.7071067811865475" />
     <geom pos="75.1477620210671 7.980287399249854 0.5975498817012911" type="box" size="1.6322047206156463 1.75 0.05" quat="0.69264030455464 -0.1423004163959321 0.14230041639593213 0.6926403045546399" />
     <geom pos="78.67252217326758 0.0 0.811561136490367" type="box" size="1.7265645079173844 1.75 0.05" quat="0.9666377993314406 0.0 -0.25614715478347516 0.0" />
-    <geom pos="77.66803797709467 0.0 0.2988593809462753" type="box" size="1.0 0.35064935064935066 0.001" quat="0.6835161428585028 0.1811233901290355 -0.18112339012903547 -0.6835161428585027" contype="0" conaffinity="0" group="1" material="mat_label_10" rgba="1 1 1 1" />
     <geom pos="80.8977620210671 0.0 1.66" type="box" size="0.75 1.75 0.05" quat="1.0 0.0 0.0 0.0" />
     <geom pos="83.12300186886661 0.0 0.811561136490367" type="box" size="1.7265645079173844 1.75 0.05" quat="0.9666377993314406 0.0 0.25614715478347516 0.0" />
     <geom pos="75.1477620210671 -3.5138375592151503 0.38395291939183823" type="box" size="1.5609689298637561 1.75 0.05" quat="0.7001681248391769 -0.09881597522258663 -0.09881597522258664 -0.7001681248391768" />
-    <geom pos="75.1477620210671 -2.5760114649293357 0.16797259380613377" type="box" size="1.0 0.35064935064935066 0.001" quat="6.063148280875342e-17 8.557029219681535e-18 -0.13974689233890575 -0.9901872580889023" contype="0" conaffinity="0" group="1" material="mat_label_4" rgba="1 1 1 1" />
     <geom pos="75.1477620210671 -5.75 0.8140000000000001" type="box" size="0.75 1.75 0.05" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" />
     <geom pos="75.1477620210671 -7.98616244078485 0.38395291939183823" type="box" size="1.5609689298637561 1.75 0.05" quat="0.7001681248391769 0.09881597522258663 0.09881597522258664 -0.7001681248391768" />
+    <geom pos="75.147762021067 14.5 1.0003113073146" type="box" size="1.8311618831422 1.75 0.05" quat="0.67437972320663 0.21263110997159 -0.21263110997159 0.67437972320663" />
+    <geom pos="75.147762021067 16.75 2.0506226146291" type="box" size="0.75 1.75 0.05" quat="0.7071067811865476 0.0 0.0 0.7071067811865475" />
+    <geom pos="75.147762021067 19 1.0003113073146" type="box" size="1.8311618831422 1.75 0.05" quat="0.67437972320663 -0.21263110997159 0.21263110997159 0.67437972320663" />
+    <geom pos="75.14776202106709 13.5022214929868 0.4036556068928518" type="box" size="1.0 0.35064935064935066 0.001" quat="0.9537169507482269 0.3007057995042731 0 0" contype="0" conaffinity="0" group="1" material="mat_slope_35deg" rgba="1 1 1 1" />
+    <geom pos="75.147762021067 -14.5 1.45" type="box" size="2.1213203435596 1.75 0.05" quat="0.65328148243819 -0.2705980500731 -0.2705980500731 -0.65328148243819" />
+    <geom pos="75.147762021067 -16.75 2.95" type="box" size="0.75 1.75 0.05" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" />
+    <geom pos="75.147762021067 -19 1.45" type="box" size="2.1213203435596 1.75 0.05" quat="0.65328148243819 0.2705980500731 0.2705980500731 -0.65328148243819" />
+    <geom pos="75.14776202106709 -13.49554497574503 0.5516109929230097" type="box" size="1.0 0.35064935064935066 0.001" quat="0 0 -0.3826834323650898 -0.9238795325112867" contype="0" conaffinity="0" group="1" material="mat_slope_45deg" rgba="1 1 1 1" />
+    <geom pos="86.14776202106709 -14.5 1.20864944676592" type="box" size="1.958110933998418 1.75 0.05" quat="0.6644630243886748 -0.2418447626479753 -0.2418447626479753 -0.6644630243886748" />
+    <geom pos="86.14776202106709 -16.75 2.46729889353184" type="box" size="0.75 1.75 0.05" quat="0.7071067811865476 0.0 0.0 -0.7071067811865475" />
+    <geom pos="86.14776202106709 -19 1.20864944676592" type="box" size="1.958110933998418 1.75 0.05" quat="0.6644630243886748 0.2418447626479753 0.2418447626479753 -0.6644630243886748" />
+    <geom pos="86.14776202106709 -13.49876093432003 0.4720827026561338" type="box" size="1.0 0.35064935064935066 0.001" quat="0 0 -0.3420201433256687 -0.9396926207859084" contype="0" conaffinity="0" group="1" material="mat_slope_40deg" rgba="1 1 1 1" />
     <!-- wood_course -->
     <geom pos="92.50330680623476 2.220446049250313e-16 0.27579632720971" type="box" size="1.1981652640600127 0.6 0.025" quat="6.074277307224726e-17 0.12620041281310998 -7.727546580132487e-18 0.9920047660197004" material="wood_mat" friction="0.5 0.005 0.0001" />
     <geom pos="91.32456637678398 2.220446049250313e-16 0.6" type="box" size="0.025 0.6 0.6" quat="6.123233995736766e-17 0.0 0.0 1.0" material="wood_mat" friction="0.5 0.005 0.0001" />

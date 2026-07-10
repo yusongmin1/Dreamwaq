@@ -30,6 +30,8 @@
 
 import os
 import copy
+import inspect
+import shutil
 import torch
 import numpy as np
 import random
@@ -37,6 +39,24 @@ from isaacgym import gymapi
 from isaacgym import gymutil
 
 from legged_gym import LEGGED_GYM_ROOT_DIR, LEGGED_GYM_ENVS_DIR
+
+def copy_task_env_to_log_dir(task_name: str, log_dir: str):
+    """Copy the registered task's env/config sources into the run log directory."""
+    if not log_dir:
+        return
+
+    from legged_gym.utils.task_registry import task_registry
+
+    task_class = task_registry.get_task_class(task_name)
+    env_dir = os.path.dirname(os.path.abspath(inspect.getfile(task_class)))
+    os.makedirs(log_dir, exist_ok=True)
+    copied = []
+    for fname in sorted(os.listdir(env_dir)):
+        src = os.path.join(env_dir, fname)
+        if os.path.isfile(src) and fname.endswith('.py'):
+            shutil.copy2(src, os.path.join(log_dir, fname))
+            copied.append(fname)
+    print(f"Saved task env sources ({', '.join(copied)}) to {log_dir}")
 
 def class_to_dict(obj) -> dict:
     if not  hasattr(obj,"__dict__"):

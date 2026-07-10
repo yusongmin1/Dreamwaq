@@ -85,7 +85,7 @@ def play(args, *, export_policy=True, record_frames=False, move_camera=False):
     img_idx = 0
 
     for i in range(10 * int(env.max_episode_length)):
-        env.commands[:, 0] = 1.2
+        env.commands[:, 0] = 1.0
         env.commands[:, 1] = 0.0
         env.commands[:, 2] = 0.0
 

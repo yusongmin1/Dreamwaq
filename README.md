@@ -45,7 +45,7 @@ python legged_gym/scripts/train.py --task=m20_big --headless
 ```
 
 ```bash
-python legged_gym/scripts/play.py --task=b2w --headless
+python legged_gym/scripts/train.py --task=m20_stairs --headless
 ```
 
 ### 2. play policy
