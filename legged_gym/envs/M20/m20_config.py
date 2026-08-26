@@ -50,7 +50,7 @@ class M20_Cfg_Yu(BaseConfig):
             ang_vel_yaw = [-1, 1]    # min max [rad/s]
             heading = [-3.14, 3.14]
         class highplatform:
-            lin_vel_x = [0.3, 0.6]   # min max [m/s]
+            lin_vel_x = [0.35,1.0]   # min max [m/s]
             lin_vel_y = [0.0, 0.0]   # forward only
             heading = [-0.0, 0.0]  # -10 deg to 10 deg [rad], resampled to commands[:, 3]
     class init_state:
@@ -142,9 +142,7 @@ class M20_Cfg_Yu(BaseConfig):
         randomize_motor_zero_offset = True
         motor_zero_offset_range = [-0.035, 0.035] # Offset to add to the motor angles
 
-        add_cmd_action_latency = True
-        randomize_cmd_action_latency = True
-        range_cmd_action_latency = [1, 3]
+        delay = True
 
     class rewards:
         class scales:

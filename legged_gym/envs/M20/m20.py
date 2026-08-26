@@ -48,10 +48,17 @@ class M20_Robot(BaseTask):
 
         clip_actions = self.cfg.normalization.clip_actions
         self.actions = torch.clip(actions, -clip_actions, clip_actions).to(self.device)
+
+        # HIMLoco style action delay: linear interpolation from last action to current
+        # action over a random number of sub-steps within one policy step
+        self.delayed_actions = self.actions.clone().view(self.num_envs, 1, self.num_actions).repeat(1, self.cfg.control.decimation, 1)
+        delay_steps = torch.randint(0, self.cfg.control.decimation, (self.num_envs, 1), device=self.device)
+        if self.cfg.domain_rand.delay:
+            for i in range(self.cfg.control.decimation):
+                self.delayed_actions[:, i] = self.last_actions + (self.actions - self.last_actions) * (i >= delay_steps)
         self.render()
         for _ in range(self.cfg.control.decimation):
-            action_delayed = self.update_cmd_action_latency_buffer()
-            self.torques = self._compute_torques(action_delayed).view(self.torques.shape)
+            self.torques = self._compute_torques(self.delayed_actions[:, _]).view(self.torques.shape)
             self.gym.set_dof_actuation_force_tensor(self.sim, gymtorch.unwrap_tensor(self.torques))
             self.gym.simulate(self.sim)
             if self.device == 'cpu':
@@ -72,16 +79,6 @@ class M20_Robot(BaseTask):
         obs, privileged_obs, obs_history, explicit_labels, _, _, _ = self.step(torch.zeros(
             self.num_envs, self.num_actions, device=self.device, requires_grad=False))
         return obs, privileged_obs, obs_history, explicit_labels
-    def update_cmd_action_latency_buffer(self):
-        actions_scaled = self.actions #* self.cfg.control.action_scale
-        if self.cfg.domain_rand.add_cmd_action_latency:
-            self.cmd_action_latency_buffer[:,:,1:] = self.cmd_action_latency_buffer[:,:,:self.cfg.domain_rand.range_cmd_action_latency[1]].clone()
-            self.cmd_action_latency_buffer[:,:,0] = actions_scaled.clone()
-            action_delayed = self.cmd_action_latency_buffer[torch.arange(self.num_envs),:,self.cmd_action_latency_simstep.long()]
-        else:
-            action_delayed = actions_scaled
-        
-        return action_delayed
 
     def post_physics_step(self):
         """ check terminations, compute observations and rewards
@@ -174,7 +171,6 @@ class M20_Robot(BaseTask):
         self.upward_drag_cooldown[env_ids] = 0
         self.episode_length_buf[env_ids] = 0
         self.reset_buf[env_ids] = 1
-        self._reset_latency_buffer(env_ids)
         # fill extras
         self.extras["episode"] = {}
         for key in self.episode_sums.keys():
@@ -446,16 +442,6 @@ class M20_Robot(BaseTask):
         self.gym.set_actor_root_state_tensor_indexed(self.sim,
                                                      gymtorch.unwrap_tensor(self.root_states),
                                                      gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
-    def _reset_latency_buffer(self,env_ids):
-        if self.cfg.domain_rand.add_cmd_action_latency:   
-            self.cmd_action_latency_buffer[env_ids, :, :] = 0.0
-            if self.cfg.domain_rand.randomize_cmd_action_latency:
-                self.cmd_action_latency_simstep[env_ids] = torch.randint(self.cfg.domain_rand.range_cmd_action_latency[0], 
-                                                           self.cfg.domain_rand.range_cmd_action_latency[1]+1,(len(env_ids),),device=self.device) 
-            else:
-                self.cmd_action_latency_simstep[env_ids] = self.cfg.domain_rand.range_cmd_action_latency[1]
-                               
-
 
     def _apply_upward_drag(self):
         """Apply upward force on highplatform when stuck; up to max_count times with cooldown between attempts."""
@@ -631,12 +617,6 @@ class M20_Robot(BaseTask):
                 if self.cfg.control.control_type in ["P", "V"]:
                     print(f"PD gain of joint {name} were not defined, setting them to zero")
         self.default_dof_pos = self.default_dof_pos.unsqueeze(0)
-        #通信延迟 cmd延迟，obs延迟 ，imu延迟
-        self.cmd_action_latency_buffer = torch.zeros(self.num_envs,self.num_actions,self.cfg.domain_rand.range_cmd_action_latency[1]+1,device=self.device)
-        self.cmd_action_latency_simstep = torch.zeros(self.num_envs, dtype=torch.long, device=self.device) 
-        self.obs_motor_latency_simstep = torch.zeros(self.num_envs, dtype=torch.long, device=self.device) 
-        self.obs_imu_latency_simstep = torch.zeros(self.num_envs, dtype=torch.long, device=self.device)  
-        self._reset_latency_buffer(torch.arange(self.num_envs, device=self.device))
         self.obs_hist_buf=torch.zeros(self.num_envs, self.cfg.env.num_history_obs,  dtype=torch.float, device=self.device)
         self.vel_buf=torch.zeros(self.num_envs, 3, dtype=torch.float, device=self.device)
         #store friction and restitution
