@@ -124,14 +124,11 @@ class M20_Robot(BaseTask):
         self.time_out_buf = self.episode_length_buf > self.max_episode_length  # no terminal reward for time-outs
         self.reset_buf |= self.time_out_buf
 
-        # 4) 高台环境（is_hp）下，任何一个非轮关节速度超限 -> 重置
-        is_hp = self.terrain_types >= self.highplatform_col_min
-
         over_speed = torch.abs(self.dof_vel) > self.dof_vel_limits * self.cfg.rewards.soft_dof_vel_limit  # (num_envs, num_dof)
         over_speed[:, self.wheel_indices] = False  # 轮子不参与判断（此时还是 2 维，可以按列索引）
         over_speed = torch.any(over_speed, dim=1)  # 降为 (num_envs,)
 
-        self.reset_buf |= over_speed & is_hp
+        self.reset_buf |= over_speed 
     def reset_idx(self, env_ids):
         """ Reset some environments.
             Calls self._reset_dofs(env_ids), self._reset_root_states(env_ids), and self._resample_commands(env_ids)
@@ -216,7 +213,6 @@ class M20_Robot(BaseTask):
         heights = torch.clip(self.root_states[:, 2].unsqueeze(1) - 0.5 - self.measured_heights, -1, 1.) * self.obs_scales.height_measurements
 
         self.obs_buf = torch.cat((
-
             self.commands[:, :3] * self.commands_scale,
             self.base_ang_vel * self.obs_scales.ang_vel,
             self.projected_gravity,
@@ -380,7 +376,13 @@ class M20_Robot(BaseTask):
         if len(hp_env_ids) == 0:
             return
 
-        self.commands[hp_env_ids, 0] = torch_rand_float(hp_cfg.lin_vel_x[0], hp_cfg.lin_vel_x[1], (len(hp_env_ids), 1), device=self.device).squeeze(1)
+        # 正负两个范围各采样一半
+        neg_mask = torch.rand(len(hp_env_ids), device=self.device) < 0.5
+        vx = torch.empty(len(hp_env_ids), device=self.device)
+        n_neg = neg_mask.sum()
+        vx[neg_mask] = torch_rand_float(hp_cfg.lin_vel_x_neg[0], hp_cfg.lin_vel_x_neg[1], (n_neg, 1), device=self.device).squeeze(1)
+        vx[~neg_mask] = torch_rand_float(hp_cfg.lin_vel_x_pos[0], hp_cfg.lin_vel_x_pos[1], ((~neg_mask).sum(), 1), device=self.device).squeeze(1)
+        self.commands[hp_env_ids, 0] = vx
         self.commands[hp_env_ids, 1] = torch_rand_float(hp_cfg.lin_vel_y[0], hp_cfg.lin_vel_y[1], (len(hp_env_ids), 1), device=self.device).squeeze(1)
         if self.cfg.commands.heading_command:
             self.commands[hp_env_ids, 3] = torch_rand_float(hp_cfg.heading[0], hp_cfg.heading[1], (len(hp_env_ids), 1), device=self.device).squeeze(1)
@@ -548,10 +550,10 @@ class M20_Robot(BaseTask):
         noise_vec = torch.zeros_like(self.obs_buf[0])
         self.add_noise = self.cfg.noise.add_noise
         noise_scales = self.cfg.noise.noise_scales
-        noise_vec[0: 3] = noise_scales.ang_vel * self.obs_scales.ang_vel   # ang vel
-        noise_vec[3:6] = noise_scales.gravity
-        noise_vec[6:9] = 0.  # commands
-        noise_vec[9:25] = noise_scales.dof_pos * self.obs_scales.dof_pos
+        noise_vec[0: 3]   = 0.  # commands 
+        noise_vec[3:6]    = noise_scales.ang_vel * self.obs_scales.ang_vel   # ang vel
+        noise_vec[6:9]    = noise_scales.gravity
+        noise_vec[9:25]   = noise_scales.dof_pos * self.obs_scales.dof_pos
         noise_vec[25: 41] = noise_scales.dof_vel * self.obs_scales.dof_vel
         noise_vec[41: 57] = 0.  # previous actions
         return noise_vec

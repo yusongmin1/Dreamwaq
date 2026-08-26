@@ -50,7 +50,8 @@ class M20_Cfg_Yu(BaseConfig):
             ang_vel_yaw = [-1, 1]    # min max [rad/s]
             heading = [-3.14, 3.14]
         class highplatform:
-            lin_vel_x = [0.35,1.0]   # min max [m/s]
+            lin_vel_x_neg = [-1.0, -0.35]  # 反向 min max [m/s]
+            lin_vel_x_pos = [0.35, 1.0]    # 正向 min max [m/s]
             lin_vel_y = [0.0, 0.0]   # forward only
             heading = [-0.0, 0.0]  # -10 deg to 10 deg [rad], resampled to commands[:, 3]
     class init_state:
