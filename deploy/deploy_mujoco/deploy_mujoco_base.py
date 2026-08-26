@@ -1,6 +1,10 @@
 import os
 import time
+from collections import deque
 
+import matplotlib
+matplotlib.use('TkAgg')  # 本机 Qt 的 xcb 插件不可用，强制使用 Tk 后端
+import matplotlib.pyplot as plt
 import mujoco.viewer
 import mujoco
 import numpy as np
@@ -53,6 +57,80 @@ def get_xbox_command(joystick, max_cmd, dead_zone=0.1):
     cmd_y = -lx * max_cmd[1]
     cmd_yaw = -rx * max_cmd[2]
     return np.array([cmd_x, cmd_y, cmd_yaw], dtype=np.float32)
+
+
+class JointVelocityPlotter:
+    """实时滚动绘制关节速度曲线（不含轮子/foot 关节），按四条腿分为 2x2 四张子图。
+
+    关节顺序为 FL, FR, RL, RR，每条腿 [hip, thigh, calf, foot]，
+    只绘制前三个关节，子图顺序：左上 FL、右上 FR、左下 RL、右下 RR。
+    """
+
+    LEGS = ['FL', 'FR', 'RL', 'RR']
+    JOINTS = ['hip', 'thigh', 'calf']
+
+    def __init__(self, dt=0.005, window_s=10.0, refresh_every=10):
+        """
+        Args:
+            dt: 仿真步长 [s]
+            window_s: 曲线滚动窗口长度 [s]
+            refresh_every: 每多少个仿真步刷新一次绘图（10 步 = 20Hz）
+        """
+        self.refresh_every = refresh_every
+        # 数据每个仿真步都会存入缓冲区，按 dt 计算点数才能覆盖 window_s
+        self.max_points = max(2, int(window_s / dt))
+        self.t_buf = deque(maxlen=self.max_points)
+        self.dq_buf = deque(maxlen=self.max_points)
+        self._count = 0
+
+        plt.ion()
+        self.fig, self.axes = plt.subplots(2, 2, figsize=(10, 6.5))
+        try:
+            self.fig.canvas.manager.set_window_title('Joint Velocities (real-time)')
+        except Exception:
+            pass
+        self.lines = {}
+        for k, leg in enumerate(self.LEGS):
+            ax = self.axes[k // 2][k % 2]
+            self.lines[leg] = []
+            for joint in self.JOINTS:
+                line, = ax.plot([], [], label=f'{leg} {joint}', linewidth=1.2)
+                self.lines[leg].append(line)
+            ax.set_xlabel('time [s]')
+            ax.set_ylabel('joint velocity [rad/s]')
+            ax.set_title(leg)
+            ax.grid(True, alpha=0.4)
+            ax.legend(loc='upper right', ncol=3, fontsize=8)
+        self.fig.suptitle('Joint velocities (rolling window)')
+        self.fig.tight_layout()
+        plt.show(block=False)
+        plt.pause(0.001)
+
+    def update(self, t, dq):
+        """每个仿真步调用一次：缓存数据，按 refresh_every 频率重绘。
+
+        Args:
+            t: 当前仿真时间 [s]
+            dq: 16 维关节速度（策略顺序 FL/FR/RL/RR × [hip, thigh, calf, foot]），
+                只取每条腿前三个关节，轮子(foot)不绘制
+        """
+        self.t_buf.append(float(t))
+        self.dq_buf.append(np.asarray(dq, dtype=np.float64).reshape(4, 4)[:, :3].copy())
+        self._count += 1
+        if self._count % self.refresh_every != 0:
+            return
+        ts = np.asarray(self.t_buf)
+        dqs = np.asarray(self.dq_buf)  # (N, 4 legs, 4 joints)
+        for k, leg in enumerate(self.LEGS):
+            for line, col in zip(self.lines[leg], dqs[:, k, :].T):
+                line.set_data(ts, col)
+            ax = self.axes[k // 2][k % 2]
+            ax.relim()
+            ax.autoscale_view()
+        plt.pause(0.001)
+
+    def close(self):
+        plt.close(self.fig)
 
 
 class MujocoDeploy:
@@ -391,6 +469,10 @@ class MujocoDeploy:
         viewer.cam.azimuth = self.config.get("camera_azimuth", 60.0)
 
     def run_sim(self):
+        # 实时 16 关节速度曲线窗口（按四条腿分四张子图）
+        dq_plotter = JointVelocityPlotter(
+            dt=self.simulation_dt, window_s=10.0, refresh_every=10
+        )
         with mujoco.viewer.launch_passive(self.m, self.d) as viewer:
             self._setup_viewer_camera(viewer)
             start = time.time()
@@ -425,6 +507,10 @@ class MujocoDeploy:
 
                 viewer.sync()
 
+                # 实时更新关节速度曲线
+                dq_plotter.update(self.d.time, self.dof_vel)
+
                 time_until_next_step = self.m.opt.timestep - (time.time() - step_start)
                 if time_until_next_step > 0:
                     time.sleep(time_until_next_step)
+        dq_plotter.close()

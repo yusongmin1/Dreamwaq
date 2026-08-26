@@ -114,15 +114,27 @@ class M20_Robot(BaseTask):
         self.last_last_actions[:] = self.last_actions[:]
         self.last_actions[:] = self.actions[:]
         self.last_dof_vel[:] = self.dof_vel[:]
-
     def check_termination(self):
         """ Check if environments need to be reset
         """
+        # 1) 终止接触力超限（躯干等关键部位触地/碰撞）
         self.reset_buf = torch.any(torch.norm(self.contact_forces[:, self.termination_contact_indices, :], dim=-1) > 1., dim=1)
+
+        # 2) 机体翻倒
         self.reset_buf |= self.projected_gravity[:, 2] > 0.
-        self.time_out_buf = self.episode_length_buf > self.max_episode_length # no terminal reward for time-outs
+
+        # 3) 超时
+        self.time_out_buf = self.episode_length_buf > self.max_episode_length  # no terminal reward for time-outs
         self.reset_buf |= self.time_out_buf
 
+        # 4) 高台环境（is_hp）下，任何一个非轮关节速度超限 -> 重置
+        is_hp = self.terrain_types >= self.highplatform_col_min
+
+        over_speed = torch.abs(self.dof_vel) > self.dof_vel_limits * self.cfg.rewards.soft_dof_vel_limit  # (num_envs, num_dof)
+        over_speed[:, self.wheel_indices] = False  # 轮子不参与判断（此时还是 2 维，可以按列索引）
+        over_speed = torch.any(over_speed, dim=1)  # 降为 (num_envs,)
+
+        self.reset_buf |= over_speed & is_hp
     def reset_idx(self, env_ids):
         """ Reset some environments.
             Calls self._reset_dofs(env_ids), self._reset_root_states(env_ids), and self._resample_commands(env_ids)
@@ -940,7 +952,6 @@ class M20_Robot(BaseTask):
         # Penalize base height away from target; disabled on highplatform
         base_height = torch.mean(self.root_states[:, 2].unsqueeze(1) - self.measured_heights, dim=1)
         reward = torch.square(base_height - self.cfg.rewards.base_height_target)
-
         return reward
 
     def _reward_joint_power(self):
@@ -1029,9 +1040,7 @@ class M20_Robot(BaseTask):
         dof_err = self.dof_pos - self.default_dof_pos
         dof_err[:,self.wheel_indices] = 0
         reward = torch.sum(torch.abs(dof_err), dim=1) * (torch.norm(self.commands[:, :2], dim=1) > 0.1)
-        if self.cfg.terrain.mesh_type in ["heightfield", "trimesh"]:
-            is_hp = self.terrain_types >= self.highplatform_col_min
-            reward = reward * (~is_hp).float()
+
         return reward
 
     def _reward_highplatform_yaw(self):
@@ -1053,4 +1062,14 @@ class M20_Robot(BaseTask):
         world_speed = torch.abs(self.root_states[:, 9])
         excess = torch.clamp(world_speed - self.cfg.rewards.highplatform_world_speed_limit, min=0.)
         return torch.square(excess) * is_hp.float()
-    
+
+    def _reward_highplatform_leg_dof_vel(self):
+        """高台地形上惩罚四条腿关节（不含轮子）速度超过限值。"""
+        if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
+            return torch.zeros(self.num_envs, device=self.device)
+        is_hp = self.terrain_types >= self.highplatform_col_min
+        leg_vel = self.dof_vel.clone()
+        leg_vel[:, self.wheel_indices] = 0.
+        excess = torch.clamp(torch.abs(leg_vel) - self.cfg.rewards.highplatform_leg_dof_vel_limit, min=0.)
+        return torch.sum(torch.square(excess), dim=1) * is_hp.float()
+

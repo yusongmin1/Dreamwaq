@@ -40,26 +40,10 @@ pip install -e .
 python legged_gym/scripts/train.py --task=m20 --headless
 ```
 
-```bash
-python legged_gym/scripts/train.py --task=m20_big --headless
-```
-
-```bash
-python legged_gym/scripts/train.py --task=m20_stairs --headless
-```
-
 ### 2. play policy
 
 ```bash
 python legged_gym/scripts/play.py --task=m20 --num_envs=50
-```
-
-```bash
-python legged_gym/scripts/play.py --task=m20_big --num_envs=50
-```
-
-```bash
-python legged_gym/scripts/play.py --task=b2w --num_envs=50
 ```
 
 ### 3. Sim2Sim (MuJoCo)
@@ -80,12 +64,6 @@ python deploy/deploy_mujoco/deploy_mujoco_m20.py
 python deploy/deploy_mujoco/deploy_mujoco_m20.py -c m20_terrain.yaml
 ```
 
-#### M20 Big
-
-```bash
-python deploy/deploy_mujoco/deploy_mujoco.py
-```
-
 #### Go2
 
 ```bash
@@ -95,7 +73,7 @@ python deploy/deploy_mujoco/deploy_mujoco_go2.py
 可通过 `-c` 指定配置文件，例如：
 
 ```bash
-python deploy/deploy_mujoco/deploy_mujoco.py -c m20_big.yaml
+python deploy/deploy_mujoco/deploy_mujoco_m20.py -c m20_terrain.yaml
 ```
 
 #### 操控说明
@@ -141,13 +119,17 @@ vel_scale = 5.0
 
 ## 📋 优化方向，待实验
 
-- [x] 上高台的速度降低 
 - [x] 添加高台的yaw误差惩罚（yaw偏移改善，上高台的动作还是不对，在课程难度低的1200轮，看起来还可以，再难度升高后动作不对劲了）
-- [ ] 上高台速度有一个大的冲击，限制世界系下的高速z轴速度
-- [ ] 高台的高速度关节惩罚
+- [x] 上高台速度有一个大的冲击，限制世界系下的高速z轴速度
+- [x] 将关节速度超限加入到终止条件中，上高台速度关节速度明显降下来，上高台的高度有所下降，不过可以使用上拉课程弥补 2026/8/26
 - [ ] 零速度下的轮子力矩惩罚
-- [ ] 全部地形改为粗糙能够让机器人学会优雅转圈吗
- 
+- [ ] 原地站立时机器人的姿态不规范
+- [ ] 原地转圈依旧没有一个完整的解决方案，虽然现在的可以使用
+- [ ] 上楼梯的步态收敛随机，全是在后面的可以，云深处那样大跨步也可以
+- [ ] 下楼梯步态姿态过低，像趴在楼梯上一样
+- [ ] 下高台时后腿容易被卡住
+- [ ] 上高台一条腿会被卡住
+- [ ] go2w 以及b2w任务
 
 ---
 

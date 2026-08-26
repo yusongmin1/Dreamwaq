@@ -37,15 +37,9 @@ from legged_gym.envs.M20.m20 import M20_Robot
 # from .go2w.go2w_robot import Go2w
 # from .b2w.b2w_config import B2WRoughCfg, B2WRoughCfgPPO
 # from .b2w.b2w_robot import B2w
-from legged_gym.envs.M20_Big.m20_big_config import M20_Cfg_Yu_Big, M20_PPO_Yu_Big
-from legged_gym.envs.M20_Big.m20_big import M20_Robot_Big
-from legged_gym.envs.M20_stairs.m20_stairs_config import M20_Cfg_Yu_Stairs, M20_PPO_Yu_Stairs
-from legged_gym.envs.M20_stairs.m20_stairs import M20_Robot_Stairs
 import os
 
 from legged_gym.utils.task_registry import task_registry
 # task_registry.register("go2w", Go2w, GO2W_Cfg(), GO2W_PPO_Cfg())
 # task_registry.register( "b2w", B2w, B2WRoughCfg(), B2WRoughCfgPPO())
 task_registry.register( "m20", M20_Robot, M20_Cfg_Yu(), M20_PPO_Yu())       
-task_registry.register( "m20_big", M20_Robot_Big, M20_Cfg_Yu_Big(), M20_PPO_Yu_Big())
-task_registry.register( "m20_stairs", M20_Robot_Stairs, M20_Cfg_Yu_Stairs(), M20_PPO_Yu_Stairs())

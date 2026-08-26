@@ -26,5 +26,13 @@ envs_/
 .g1_29/
 g1_29/
 
-.logs/
-logs/
+# Editor / logs
+.vscode/
+MUJOCO_LOG.TXT
+
+# Zcode generated
+.zcode/
+AGENTS.md
+CLAUDE.md
+TODO.md
+zcode-notes/
