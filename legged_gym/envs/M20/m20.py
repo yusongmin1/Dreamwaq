@@ -60,6 +60,8 @@ class M20_Robot(BaseTask):
         for _ in range(self.cfg.control.decimation):
             self.torques = self._compute_torques(self.delayed_actions[:, _]).view(self.torques.shape)
             self.gym.set_dof_actuation_force_tensor(self.sim, gymtorch.unwrap_tensor(self.torques))
+            if self.cfg.domain_rand.upward_drag:
+                self._apply_upward_drag_force()  # 每个仿真子步(0.005s)重新施力, 才能持续
             self.gym.simulate(self.sim)
             if self.device == 'cpu':
                 self.gym.fetch_results(self.sim, True)
@@ -166,6 +168,7 @@ class M20_Robot(BaseTask):
         self.feet_air_time[env_ids] = 0.
         self.upward_drag_count[env_ids] = 0
         self.upward_drag_cooldown[env_ids] = 0
+        self.upward_drag_active[env_ids] = 0
         self.episode_length_buf[env_ids] = 0
         self.reset_buf[env_ids] = 1
         # fill extras
@@ -176,6 +179,26 @@ class M20_Robot(BaseTask):
         # log additional curriculum info
         if self.cfg.terrain.mesh_type == "trimesh":
             self.extras["episode"]["terrain_level"] = torch.mean(self.terrain_levels.float())
+            # 每种地形类型(smooth_slope/rough_slope/stairs_down/stairs_up/obstacles/highplatform)的平均水平
+            if not hasattr(self, "_col_terrain_types"):
+                # 课程模式下 choice = j/num_cols + 0.001, 按 proportions 累积区间映射地形类型
+                props = np.cumsum(self.cfg.terrain.terrain_proportions)
+                def _col_type(j):
+                    c = j / self.cfg.terrain.num_cols + 0.001
+                    if c < props[0]: return "smooth_slope"
+                    elif c < props[1]: return "rough_slope"
+                    elif c < props[3]: return "stairs_down" if c < props[2] else "stairs_up"
+                    elif c < props[4]: return "obstacles"
+                    else: return "highplatform"
+                self._col_terrain_types = [_col_type(j) for j in range(self.cfg.terrain.num_cols)]
+            col_type_t = torch.tensor([{"smooth_slope": 0, "rough_slope": 1, "stairs_down": 2,
+                                        "stairs_up": 3, "obstacles": 4, "highplatform": 5}[t]
+                                       for t in self._col_terrain_types], device=self.device)
+            for tid, tname in enumerate(["smooth_slope", "rough_slope", "stairs_down",
+                                         "stairs_up", "obstacles", "highplatform"]):
+                env_mask = torch.isin(self.terrain_types, (col_type_t == tid).nonzero(as_tuple=False).flatten())
+                if env_mask.any():
+                    self.extras["episode"][f"terrain_level_{tname}"] = torch.mean(self.terrain_levels[env_mask].float())
         if self.cfg.commands.curriculum:
             self.extras["episode"]["max_command_x"] = self.command_ranges["lin_vel_x"][1]
         # send timeout info to the algorithm
@@ -376,8 +399,8 @@ class M20_Robot(BaseTask):
         if len(hp_env_ids) == 0:
             return
 
-        # 正负两个范围各采样一半
-        neg_mask = torch.rand(len(hp_env_ids), device=self.device) < 0.5
+        # 按env编号奇偶固定分配方向: 奇数env(50%)速度>0, 偶数env速度<0
+        neg_mask = (hp_env_ids % 2) == 0
         vx = torch.empty(len(hp_env_ids), device=self.device)
         n_neg = neg_mask.sum()
         vx[neg_mask] = torch_rand_float(hp_cfg.lin_vel_x_neg[0], hp_cfg.lin_vel_x_neg[1], (n_neg, 1), device=self.device).squeeze(1)
@@ -446,12 +469,15 @@ class M20_Robot(BaseTask):
                                                      gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
 
     def _apply_upward_drag(self):
-        """Apply upward force on highplatform when stuck; up to max_count times with cooldown between attempts."""
+        """拖拽触发/计时逻辑, 每个控制步(0.02s)调用一次:
+        卡在高台 -> 触发, active 置为 upward_drag_duration_steps(单位: 控制步, 每步0.02s)"""
         if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
             return
 
         cfg = self.cfg.domain_rand
         self.upward_drag_cooldown = torch.clamp(self.upward_drag_cooldown - 1, min=0)
+        # 每个控制步递减一次持续计数(施力本身在 _apply_upward_drag_force 中按仿真子步进行)
+        self.upward_drag_active = torch.clamp(self.upward_drag_active - 1, min=0)
 
         cmd_speed = torch.norm(self.commands[:, :2], dim=1)
         actual_speed = torch.norm(self.base_lin_vel[:, :2], dim=1)
@@ -461,13 +487,24 @@ class M20_Robot(BaseTask):
         ready = self.upward_drag_cooldown == 0
         has_chances = self.upward_drag_count < cfg.upward_drag_max_count
 
-        need_drag = is_highplatform & cmd_ok & vel_low & ready & has_chances
+        # 触发新一轮拖拽(正在拖拽中的 env 不重复触发)
+        need_drag = is_highplatform & cmd_ok & vel_low & ready & has_chances & (self.upward_drag_active == 0)
         drag_env_ids = need_drag.nonzero(as_tuple=False).flatten()
-        if len(drag_env_ids) == 0:
-            return
+        if len(drag_env_ids) > 0:
+            self.upward_drag_count[drag_env_ids] += 1
+            self.upward_drag_cooldown[drag_env_ids] = cfg.upward_drag_cooldown_steps
+            self.upward_drag_active[drag_env_ids] = cfg.upward_drag_duration_steps
 
-        self.upward_drag_count[drag_env_ids] += 1
-        self.upward_drag_cooldown[drag_env_ids] = cfg.upward_drag_cooldown_steps
+    def _apply_upward_drag_force(self):
+        """在每个仿真子步(sim dt=0.005s)对 active>0 的 env 重新施加向上的力,
+        使力在 duration 个控制步(duration*0.02s)内持续不断"""
+        if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
+            return
+        cfg = self.cfg.domain_rand
+
+        active_ids = (self.upward_drag_active > 0).nonzero(as_tuple=False).flatten()
+        if len(active_ids) == 0:
+            return
 
         forces = torch.zeros(self.num_envs, self.num_bodies, 3, device=self.device)
         force_positions = self.rigid_body_states[:, :, 0:3].clone()
@@ -476,24 +513,18 @@ class M20_Robot(BaseTask):
             [cfg.upward_drag_forward_offset, 0.0, 0.0], device=self.device,
         )
         forward_offset = quat_apply(
-            self.base_quat[drag_env_ids],
-            offset.unsqueeze(0).expand(len(drag_env_ids), -1),
+            self.base_quat[active_ids],
+            offset.unsqueeze(0).expand(len(active_ids), -1),
         )
-        base_pos = self.rigid_body_states[drag_env_ids, self.base_body_index, 0:3]
-        force_positions[drag_env_ids, self.base_body_index] = base_pos + forward_offset
-        forces[drag_env_ids, self.base_body_index, 2] = cfg.upward_drag_z_force
+        base_pos = self.rigid_body_states[active_ids, self.base_body_index, 0:3]
+        force_positions[active_ids, self.base_body_index] = base_pos + forward_offset
+        forces[active_ids, self.base_body_index, 2] = cfg.upward_drag_z_force
 
         self.gym.apply_rigid_body_force_at_pos_tensors(
             self.sim,
             gymtorch.unwrap_tensor(forces),
             gymtorch.unwrap_tensor(force_positions),
             gymapi.ENV_SPACE,
-        )
-
-        self.root_states[drag_env_ids, 9] += cfg.upward_drag_z_vel
-        self.gym.set_actor_root_state_tensor(self.sim, gymtorch.unwrap_tensor(self.root_states))
-        self.base_lin_vel[drag_env_ids] = quat_rotate_inverse(
-            self.base_quat[drag_env_ids], self.root_states[drag_env_ids, 7:10],
         )
 
 
@@ -596,6 +627,7 @@ class M20_Robot(BaseTask):
         self.last_contacts = torch.zeros(self.num_envs, len(self.feet_indices), dtype=torch.bool, device=self.device, requires_grad=False)
         self.upward_drag_count = torch.zeros(self.num_envs, dtype=torch.long, device=self.device, requires_grad=False)
         self.upward_drag_cooldown = torch.zeros(self.num_envs, dtype=torch.long, device=self.device, requires_grad=False)
+        self.upward_drag_active = torch.zeros(self.num_envs, dtype=torch.long, device=self.device, requires_grad=False)
         self.base_lin_vel = quat_rotate_inverse(self.base_quat, self.root_states[:, 7:10])
         self.base_ang_vel = quat_rotate_inverse(self.base_quat, self.root_states[:, 10:13])
         self.projected_gravity = quat_rotate_inverse(self.base_quat, self.gravity_vec)

@@ -5,7 +5,7 @@ simulation_duration: 600000000.0
 simulation_dt: 0.005
 control_decimation: 4
 
-policy_path: logs/M20/exported/policies/policy_dwaq.onnx
+policy_path: logs/M20/exported/policies/policy_dwaq_80.onnx
 xml_path: deploy/deploy_mujoco/M20/mjcf/race_track.xml
 
 kps: [80, 80, 80, 0, 80, 80, 80, 0, 80, 80, 80, 0, 80, 80, 80, 0]

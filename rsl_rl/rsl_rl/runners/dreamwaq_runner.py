@@ -148,6 +148,7 @@ class DreamWaQRunner:
         iteration_time = locs['collection_time'] + locs['learn_time']
 
         ep_string = f''
+        ep_means = {}
         if locs['ep_infos']:
             for key in locs['ep_infos'][0]:
                 infotensor = torch.tensor([], device=self.device)
@@ -159,8 +160,12 @@ class DreamWaQRunner:
                         ep_info[key] = ep_info[key].unsqueeze(0)
                     infotensor = torch.cat((infotensor, ep_info[key].to(self.device)))
                 value = torch.mean(infotensor)
+                ep_means[key] = value.item()
                 self.writer.add_scalar('Episode/' + key, value, locs['it'])
                 ep_string += f"""{f'Mean episode {key}:':>{pad}} {value:.4f}\n"""
+            # 地形水平: 每种地形类型的平均(上面逐项已打印), TensorBoard 额外记录总水平
+            if 'terrain_level' in ep_means:
+                self.writer.add_scalar('Terrain/total_level', ep_means['terrain_level'], locs['it'])
         mean_std = self.alg.actor_critic.std.mean()
         fps = int(self.num_steps_per_env * self.env.num_envs / (locs['collection_time'] + locs['learn_time']))
 

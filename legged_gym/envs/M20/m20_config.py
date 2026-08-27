@@ -121,12 +121,12 @@ class M20_Cfg_Yu(BaseConfig):
         push_interval_s = 10
         max_push_vel_xy = 1.0
         max_push_ang_vel = 0.6
-        upward_drag = True
+        upward_drag = False
         upward_drag_cmd_threshold = 0.5      # command planar speed [m/s]
         upward_drag_vel_threshold = 0.2      # actual base planar speed [m/s]
-        upward_drag_z_force = 10000.0         # upward force [N]
-        upward_drag_z_vel = 1.0              # upward velocity impulse [m/s]
-        upward_drag_forward_offset = 0.1     # force application point, 10cm in front of base [m]
+        upward_drag_z_force = 500.0         # upward force [N]
+        upward_drag_duration_steps = 10       # force duration, in control steps (10 x 0.02s = 0.2s)
+        upward_drag_forward_offset = -0.2     # force application point, 10cm in front of base [m]
         upward_drag_max_count = 4           # max drag attempts per episode
         upward_drag_cooldown_steps = 100     # steps between drag attempts
         randomize_base_mass = True

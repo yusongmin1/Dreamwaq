@@ -60,14 +60,14 @@ def get_xbox_command(joystick, max_cmd, dead_zone=0.1):
 
 
 class JointVelocityPlotter:
-    """实时滚动绘制关节速度曲线（不含轮子/foot 关节），按四条腿分为 2x2 四张子图。
+    """实时滚动绘制关节速度曲线（含轮子/foot 关节），按四条腿分为 2x2 四张子图。
 
     关节顺序为 FL, FR, RL, RR，每条腿 [hip, thigh, calf, foot]，
-    只绘制前三个关节，子图顺序：左上 FL、右上 FR、左下 RL、右下 RR。
+    四个关节全部绘制（foot 即轮子），子图顺序：左上 FL、右上 FR、左下 RL、右下 RR。
     """
 
     LEGS = ['FL', 'FR', 'RL', 'RR']
-    JOINTS = ['hip', 'thigh', 'calf']
+    JOINTS = ['hip', 'thigh', 'calf', 'foot']
 
     def __init__(self, dt=0.005, window_s=10.0, refresh_every=10):
         """
@@ -100,7 +100,7 @@ class JointVelocityPlotter:
             ax.set_ylabel('joint velocity [rad/s]')
             ax.set_title(leg)
             ax.grid(True, alpha=0.4)
-            ax.legend(loc='upper right', ncol=3, fontsize=8)
+            ax.legend(loc='upper right', ncol=4, fontsize=8)
         self.fig.suptitle('Joint velocities (rolling window)')
         self.fig.tight_layout()
         plt.show(block=False)
@@ -112,10 +112,10 @@ class JointVelocityPlotter:
         Args:
             t: 当前仿真时间 [s]
             dq: 16 维关节速度（策略顺序 FL/FR/RL/RR × [hip, thigh, calf, foot]），
-                只取每条腿前三个关节，轮子(foot)不绘制
+                四个关节全部绘制（foot 即轮子速度）
         """
         self.t_buf.append(float(t))
-        self.dq_buf.append(np.asarray(dq, dtype=np.float64).reshape(4, 4)[:, :3].copy())
+        self.dq_buf.append(np.asarray(dq, dtype=np.float64).reshape(4, 4).copy())
         self._count += 1
         if self._count % self.refresh_every != 0:
             return
