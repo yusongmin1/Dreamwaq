@@ -38,7 +38,9 @@ class B2W_Cfg(M20_Cfg_Yu):
         action_scale = 0.25
         vel_scale = 5.0
         decimation = 4
-
+    # class terrain(M20_Cfg_Yu.terrain):
+    #     terrain_proportions = [0.15, 0.15, 0.3, 0.3, 0.1]
+    #     num_rows= 10 # number of terrain rows (levels)
     class asset(M20_Cfg_Yu.asset):
         file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/b2w_description/urdf/b2w_description_fix.urdf'
         name = "b2w"
@@ -52,23 +54,9 @@ class B2W_Cfg(M20_Cfg_Yu):
     class rewards(M20_Cfg_Yu.rewards):
         # 奖励系数与 GO2W 任务一致(参考 Wheel_Legged_Gym-main 仓库, 整体替换 scales,
         # M20 特有的 highplatform_*/wheel_dof_vel/stand_still_wheel_*/run_still 等项不再激活)
-        class scales:
-            termination = -0.8
-            tracking_lin_vel = 3.0
-            tracking_ang_vel = 1.5
-            lin_vel_z = -1
-            ang_vel_xy = -0.05
-            orientation = -0.5
-            torques = -0.000005
-            dof_vel = -1e-7
-            dof_acc = -1e-7
-            base_height = -10
-            feet_air_time = 0.5
-            collision = -1
-            feet_stumble = -0.1
-            action_rate = -0.01
-            stand_still = -0.5
-            hip_default = -0.5
+        class scales(M20_Cfg_Yu.rewards.scales):
+            wheel_dof_vel=0.0
+            torques = -0.000002#
         only_positive_rewards = True
         tracking_sigma = 0.25
         base_height_target = 0.65 # 期望高度 [m] (默认站姿站立约0.624, 负载下轻微压缩)

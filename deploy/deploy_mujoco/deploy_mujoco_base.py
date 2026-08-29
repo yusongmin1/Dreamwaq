@@ -231,6 +231,10 @@ class MujocoDeploy:
             arrow_scale=config.get("arrow_scale", 0.6),
             cmd_arrow_rgba=tuple(config.get("cmd_arrow_rgba", [0.15, 0.45, 1.0, 0.95])),
             vel_arrow_rgba=tuple(config.get("vel_arrow_rgba", [0.15, 0.85, 0.25, 0.95])),
+            foot_force_arrow_scale=config.get("foot_force_arrow_scale", 0.0004),
+            foot_force_arrow_width=config.get("foot_force_arrow_width", 0.006),
+            foot_force_min_arrow_len=config.get("foot_force_min_arrow_len", 0.02),
+            foot_force_max_arrow_len=config.get("foot_force_max_arrow_len", 0.12),
         )
         self._setup_dof_mapping(config)
         self._print_joint_order()
@@ -472,6 +476,13 @@ class MujocoDeploy:
         viewer.cam.distance = self.config.get("camera_distance", 2.5)
         viewer.cam.elevation = self.config.get("camera_elevation", -20.0)
         viewer.cam.azimuth = self.config.get("camera_azimuth", 60.0)
+        # 关闭 viewer 自带的接触力箭头(大小不可调, 满载时巨大), 用自绘可调版本替代;
+        # mujoco 3.2.x 的 Handle 未暴露 vopt, 此时请在 viewer UI 手动关闭:
+        # Visualization -> Contact -> contact force
+        try:
+            viewer.vopt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = False
+        except AttributeError:
+            pass
 
     def run_sim(self):
         # 实时 16 关节速度曲线窗口（按四条腿分四张子图）

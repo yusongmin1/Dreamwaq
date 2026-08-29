@@ -160,8 +160,6 @@ class M20_Cfg_Yu(BaseConfig):
             # stumble = -0.1
             action_rate = -0.01
             stand_still=-0.5
-            stand_still_wheel_torque = -0.5 # 零速度命令下轮子力矩惩罚
-            stand_still_wheel_vel = -0.5 # 零速度命令下轮子速度惩罚
             dof_pos_limits = -5.0
             dof_vel_limits=-1.0
             hip_default = -0.5

@@ -9,8 +9,8 @@ policy_path: logs/B2W/exported/policies/policy_dwaq.onnx
 xml_path: deploy/deploy_mujoco/B2W/mjcf/race_track.xml
 
 # kp/kd 与训练配置 legged_gym/envs/B2W/b2w_config.py 一致
-kps: [400, 400, 400, 0, 400, 400, 400, 0, 400, 400, 400, 0, 400, 400, 400, 0]
-kds: [20, 20, 20, 5, 20, 20, 20, 5, 20, 20, 20, 5, 20, 20, 20, 5]
+kps: [160, 160, 160, 0, 160, 160, 160, 0, 160, 160, 160, 0, 160, 160, 160, 0]
+kds: [5, 5, 5, 1, 5, 5, 5, 1,5, 5, 5, 1,5, 5, 5, 1,]
 
 # 策略顺序 FL, FR, RL, RR x [hip, thigh, calf, foot(wheel)]
 default_angles: [
@@ -41,7 +41,7 @@ base_body_names: ["base_link"]
 cmd_arrow_rgba: [0.15, 0.45, 1.0, 0.95]
 vel_arrow_rgba: [0.15, 0.85, 0.25, 0.95]
 
-vel_scale: 10
+vel_scale: 5
 action_scale: 0.25
 
 num_actions: 16

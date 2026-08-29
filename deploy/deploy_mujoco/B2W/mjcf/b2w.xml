@@ -130,7 +130,7 @@
               <inertial pos="-0.00117 0.051576 -0.001334"
                 quat="0.661419 0.248219 0.250051 0.662108" mass="0.918"
                 diaginertia="0.00611012 0.00328926 0.00319322" />
-              <joint name="FL_wheel_joint" pos="0 0 0" axis="0 1 0" />
+              <joint name="FL_wheel_joint" pos="0 0 0" axis="0 1 0" damping="0" armature="0" />
               <geom type="mesh" rgba="0.15 0.15 0.15 1" mesh="FL_wheel" />
               <geom pos="0 -0.045816 0" type="mesh" mesh="FL_wheel" class="collision"
                 friction="0.4 0.005 0.0001" />
@@ -176,7 +176,7 @@
               <inertial pos="-0.00117 -0.051576 -0.001334"
                 quat="0.661419 0.248219 0.250051 0.662108" mass="0.918"
                 diaginertia="0.00611012 0.00328926 0.00319322" />
-              <joint name="FR_wheel_joint" pos="0 0 0" axis="0 1 0" />
+              <joint name="FR_wheel_joint" pos="0 0 0" axis="0 1 0" damping="0" armature="0" />
               <geom type="mesh" rgba="0.15 0.15 0.15 1" mesh="FR_wheel" />
               <geom pos="0 -0.045816 0" type="mesh" mesh="FR_wheel" class="collision"
                 friction="0.4 0.005 0.0001" />
@@ -223,7 +223,7 @@
               <inertial pos="-0.00117 0.051576 -0.001334"
                 quat="0.661419 0.248219 0.250051 0.662108" mass="0.918"
                 diaginertia="0.00611012 0.00328926 0.00319322" />
-              <joint name="RL_wheel_joint" pos="0 0 0" axis="0 1 0" />
+              <joint name="RL_wheel_joint" pos="0 0 0" axis="0 1 0" damping="0" armature="0" />
               <geom type="mesh" rgba="0.15 0.15 0.15 1" mesh="RL_wheel" />
               <geom pos="0 -0.045816 0" type="mesh" mesh="RL_wheel" class="collision"
                 friction="0.4 0.005 0.0001" />
@@ -269,7 +269,7 @@
               <inertial pos="-0.00117 -0.051576 -0.001334"
                 quat="0.661419 0.248219 0.250051 0.662108" mass="0.918"
                 diaginertia="0.00611012 0.00328926 0.00319322" />
-              <joint name="RR_wheel_joint" pos="0 0 0" axis="0 1 0" />
+              <joint name="RR_wheel_joint" pos="0 0 0" axis="0 1 0" damping="0" armature="0" />
               <geom type="mesh" rgba="0.15 0.15 0.15 1" mesh="RR_wheel" />
               <geom pos="0 -0.045816 0" type="mesh" mesh="RR_wheel" class="collision"
                 friction="0.4 0.005 0.0001" />
