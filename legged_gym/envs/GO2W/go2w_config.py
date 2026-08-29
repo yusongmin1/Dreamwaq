@@ -30,6 +30,9 @@ class GO2W_Cfg(M20_Cfg_Yu):
             'RR_foot_joint': 0.0,
         }
 
+    class terrain(M20_Cfg_Yu.terrain):
+        terrain_proportions = [0.15, 0.15, 0.3, 0.3, 0.1]
+        num_rows= 10 # number of terrain rows (levels)
     class control(M20_Cfg_Yu.control):
         # PD Drive parameters: kp/kd 来自原 legged_gym/envs/go2w/go2w_config.py
         control_type = 'P'
@@ -49,8 +52,33 @@ class GO2W_Cfg(M20_Cfg_Yu):
         replace_cylinder_with_capsule = False # replace collision cylinders with capsules, leads to faster/more stable simulation
         flip_visual_attachments = True # Some .obj meshes must be flipped from y-up to z-up
         
-    class rewards(M20_Cfg_Yu.rewards):
-        base_height_target = 0.55
+    class rewards:
+        # 奖励系数与 Wheel_Legged_Gym-main 仓库 go2w 任务完全一致(整体替换 scales,
+        # M20 特有的 highplatform_*/wheel_dof_vel/stand_still_wheel_*/run_still 等项不再激活)
+        class scales:
+            termination = -0.8
+            tracking_lin_vel = 3.0
+            tracking_ang_vel = 1.5
+            lin_vel_z = -1
+            ang_vel_xy = -0.05
+            orientation = -0.5
+            torques = -0.0003
+            dof_vel = -1e-7
+            dof_acc = -1e-7
+            base_height = -10
+            # feet_air_time = 0.5
+            collision = -1
+            feet_stumble = -0.1
+            action_rate = -0.01
+            stand_still = -0.5
+            hip_default = -0.5
+        only_positive_rewards = True
+        tracking_sigma = 0.25
+        base_height_target = 0.4
+        max_contact_force = 100.
+        soft_dof_pos_limit = 1.
+        soft_dof_vel_limit = 1.
+        soft_torque_limit = 1.5
 
 class GO2W_PPO(M20_PPO_Yu):
     class runner(M20_PPO_Yu.runner):

@@ -192,6 +192,7 @@ class MujocoDeploy:
             self.init_base_height = config.get("init_base_height", None)
 
             self.wheel_indices = config["wheel_sim_indices"]
+            self.zero_wheel_vel_obs = config.get("zero_wheel_vel_obs", False)
             self.cmd = np.array(config["cmd_init"], dtype=np.float32)
             self.x_vel_cmd, self.y_vel_cmd, self.yaw_vel_cmd = self.cmd.tolist()
             self.mujoco_to_policy_idx = None
@@ -447,6 +448,10 @@ class MujocoDeploy:
         dof_error[self.wheel_indices] = 0
 
         dof_vel = self.dof_vel * self.dof_vel_scale
+        # 训练侧 _reward_dof_vel 会原地把轮速置零(compute_reward 先于 compute_observations),
+        # 故 policy 观测中轮速恒为 0; 开启此项使 sim2sim 观测与训练一致(go2w 需要)
+        if self.zero_wheel_vel_obs:
+            dof_vel[self.wheel_indices] = 0
         gravity_orientation = self.get_gravity_orientation(self.quat)
         omega = self.ang_vel * self.ang_vel_scale
         self.obs[0] = self.x_vel_cmd * self.cmd_scale[0]

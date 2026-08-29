@@ -50,6 +50,8 @@ num_obs_hist: 5
 init_base_height: 0.45
 
 wheel_sim_indices: [3, 7, 11, 15]
+# _reward_dof_vel 已改为 M20 的 clone 写法, 观测保留真实轮速 -> sim2sim 同样喂真实轮速
+zero_wheel_vel_obs: false
 
 # MuJoCo 关节名按策略顺序排列 (轮子在 mjcf 中名为 *_wheel_joint, 训练时为 *_foot_joint)
 isaac_dof_names: [
