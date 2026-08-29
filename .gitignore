@@ -36,3 +36,6 @@ AGENTS.md
 CLAUDE.md
 TODO.md
 zcode-notes/
+
+logs/
+.logs/

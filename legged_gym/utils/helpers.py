@@ -419,3 +419,52 @@ class PolicyExporterDWAQ_(torch.nn.Module):
 def export_policy_as_dwaq_(actor_critic, path):
     exporter = PolicyExporterDWAQ_(actor_critic)
     exporter.export(path)
+
+
+#====================== export CTS policy as onnx (student encoder + actor) =============
+class PolicyExporterCTS(torch.nn.Module):
+    """导出 CTS student 策略为 ONNX: 输入为 6 帧拼接缓冲(num_obs_hist*num_obs + num_obs,
+    与 deploy_mujoco 的 obs_hist_buf 布局一致), 前 5 帧走 student_encoder,
+    最后 1 帧作为当前 obs 与 latent 拼接进 actor。"""
+
+    def __init__(self, actor_critic):
+        super().__init__()
+        self.num_obs = None  # 在 export 时设置
+        self.actor = copy.deepcopy(actor_critic.actor)
+        self.student_encoder = copy.deepcopy(actor_critic.student_encoder)
+        self.actor.eval()
+        self.student_encoder.eval()
+
+    def forward(self, obs_history):
+        # obs_history: (B, (num_obs_hist+1)*num_obs), 前 5 帧历史 + 当前帧
+        n = self.num_obs
+        latent = self.student_encoder(obs_history[:, :-n])
+        actor_input = torch.cat((latent, obs_history[:, -n:]), dim=1)
+        return self.actor(actor_input)
+
+    def export(self, path, num_obs, num_obs_hist=5, opset=11):
+        self.num_obs = num_obs
+        os.makedirs(path, exist_ok=True)
+        onnx_file = os.path.join(path, 'policy_cts.onnx')
+        dummy_obs = torch.randn(1, (num_obs_hist + 1) * num_obs)
+        self.to('cpu')
+        self.eval()
+        with torch.no_grad():
+            torch.onnx.export(
+                self,
+                (dummy_obs,),
+                onnx_file,
+                input_names=['obs'],
+                output_names=['actions'],
+                dynamic_axes={
+                    'obs': {0: 'batch'},
+                    'actions': {0: 'batch'}
+                },
+                opset_version=opset
+            )
+        print(f'CTS ONNX 模型已导出至: {onnx_file}')
+
+
+def export_policy_as_cts(actor_critic, path, num_obs, num_obs_hist=5):
+    exporter = PolicyExporterCTS(actor_critic)
+    exporter.export(path, num_obs, num_obs_hist)

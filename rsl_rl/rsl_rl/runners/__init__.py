@@ -29,3 +29,4 @@
 # Copyright (c) 2021 ETH Zurich, Nikita Rudin
 
 from .dreamwaq_runner import DreamWaQRunner
+from .on_policy_runner_cts import OnPolicyRunnerCTS

@@ -29,3 +29,4 @@
 # Copyright (c) 2021 ETH Zurich, Nikita Rudin
 from .actor_critic_dreamwaq import ActorCriticDreamWaQ
 from .vae import VAE
+from .actor_critic_cts import ActorCriticCTS

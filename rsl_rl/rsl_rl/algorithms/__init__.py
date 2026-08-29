@@ -29,3 +29,4 @@
 # Copyright (c) 2021 ETH Zurich, Nikita Rudin
 
 from .ppo_dreamwaq import PPO_DreamWaQ
+from .cts import CTS

@@ -126,11 +126,11 @@ class M20_Robot(BaseTask):
         self.time_out_buf = self.episode_length_buf > self.max_episode_length  # no terminal reward for time-outs
         self.reset_buf |= self.time_out_buf
 
-        over_speed = torch.abs(self.dof_vel) > self.dof_vel_limits * self.cfg.rewards.soft_dof_vel_limit  # (num_envs, num_dof)
-        over_speed[:, self.wheel_indices] = False  # 轮子不参与判断（此时还是 2 维，可以按列索引）
-        over_speed = torch.any(over_speed, dim=1)  # 降为 (num_envs,)
+        # over_speed = torch.abs(self.dof_vel) > self.dof_vel_limits * self.cfg.rewards.soft_dof_vel_limit  # (num_envs, num_dof)
+        # over_speed[:, self.wheel_indices] = False  # 轮子不参与判断（此时还是 2 维，可以按列索引）
+        # over_speed = torch.any(over_speed, dim=1)  # 降为 (num_envs,)
 
-        self.reset_buf |= over_speed 
+        # self.reset_buf |= over_speed 
     def reset_idx(self, env_ids):
         """ Reset some environments.
             Calls self._reset_dofs(env_ids), self._reset_root_states(env_ids), and self._resample_commands(env_ids)
@@ -784,7 +784,12 @@ class M20_Robot(BaseTask):
         print("###feet_names:",feet_names)
         print("###wheels name:",wheel_names)
 
+        # 兼容不同机器人的基座命名 (m20/b2w: "base_link", go2w: "base")
         self.base_body_index = self.gym.find_asset_rigid_body_index(robot_asset, "base_link")
+        if self.base_body_index == -1:
+            self.base_body_index = self.gym.find_asset_rigid_body_index(robot_asset, "base")
+        if self.base_body_index == -1:
+            self.base_body_index = 0
 
         base_init_state_list = self.cfg.init_state.pos + self.cfg.init_state.rot + self.cfg.init_state.lin_vel + self.cfg.init_state.ang_vel
         self.base_init_state = to_torch(base_init_state_list, device=self.device, requires_grad=False)
@@ -978,7 +983,7 @@ class M20_Robot(BaseTask):
     def _reward_dof_vel(self):
         # Penalize dof velocities
         vel=self.dof_vel.clone()
-        vel[:,self.wheel_indices] = 0
+        vel[:,self.wheel_indices] *= 0.1
         return torch.sum(torch.square(vel), dim=1)
 
     def _reward_dof_acc(self):
@@ -1033,10 +1038,20 @@ class M20_Robot(BaseTask):
         return reward
 
     def _reward_stand_still(self):
-        # Penalize motion at zero commands        
+        # Penalize motion at zero commands
         dof_err = self.dof_pos - self.default_dof_pos
         dof_err[:,self.wheel_indices] = 0
         return torch.sum(torch.abs(dof_err), dim=1) * (torch.norm(self.commands[:, :2], dim=1) < 0.1)
+
+    def _reward_stand_still_wheel_torque(self):
+        # 零速度命令下惩罚轮子力矩(原地站立时轮子不应持续出力)
+        return torch.sum(torch.abs(self.torques[:, self.wheel_indices]), dim=1) * \
+            (torch.norm(self.commands[:, :2], dim=1) < 0.1)
+
+    def _reward_stand_still_wheel_vel(self):
+        # 零速度命令下惩罚轮子速度(原地站立时轮子不应空转/漂移)
+        return torch.sum(torch.abs(self.dof_vel[:, self.wheel_indices]), dim=1) * \
+            (torch.norm(self.commands[:, :2], dim=1) < 0.1)
 
     def _reward_feet_contact_forces(self):
         # penalize high contact forces
@@ -1054,7 +1069,6 @@ class M20_Robot(BaseTask):
         dof_err = self.dof_pos - self.default_dof_pos
         dof_err[:,self.wheel_indices] = 0
         reward = torch.sum(torch.abs(dof_err), dim=1) * (torch.norm(self.commands[:, :2], dim=1) > 0.1)
-
         return reward
 
     def _reward_highplatform_yaw(self):
@@ -1086,4 +1100,27 @@ class M20_Robot(BaseTask):
         leg_vel[:, self.wheel_indices] = 0.
         excess = torch.clamp(torch.abs(leg_vel) - self.cfg.rewards.highplatform_leg_dof_vel_limit, min=0.)
         return torch.sum(torch.square(excess), dim=1) * is_hp.float()
+
+    def _reward_wheel_dof_vel(self):
+        """所有地形上惩罚轮子速度超过限值。"""
+        wheel_vel = self.dof_vel[:, self.wheel_indices]
+        excess = torch.clamp(torch.abs(wheel_vel) - self.cfg.rewards.wheel_dof_vel_limit, min=0.)
+        return torch.sum(torch.abs(excess), dim=1)
+
+    def _reward_highplatform_stuck_nofront(self):
+        """高台上"卡住"时刻(命令平面速度>0.4 但实际平面速度<0.25)且前两条腿
+        不是全部接触地面 -> 惩罚, 促使卡住时前腿先落回台阶面找支撑。"""
+        if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
+            return torch.zeros(self.num_envs, device=self.device)
+        rew = self.cfg.rewards
+        is_hp = self.terrain_types >= self.highplatform_col_min
+        cmd_speed = torch.norm(self.commands[:, :2], dim=1)
+        actual_speed = torch.norm(self.base_lin_vel[:, :2], dim=1)
+        stuck = (cmd_speed > rew.highplatform_stuck_cmd_threshold) & \
+                (actual_speed < rew.highplatform_stuck_vel_threshold)
+        # 前两腿(feet_indices[0]=FL, [1]=FR)全部接触: 接触力全方向范数 > 1N
+        front_all_contact = torch.all(
+            torch.norm(self.contact_forces[:, self.feet_indices[:2], :], dim=-1) > 1., dim=1)
+        bad = is_hp & stuck & (~front_all_contact)
+        return bad.float()
 

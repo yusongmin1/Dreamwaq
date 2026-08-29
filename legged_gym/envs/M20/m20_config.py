@@ -160,6 +160,8 @@ class M20_Cfg_Yu(BaseConfig):
             # stumble = -0.1
             action_rate = -0.01
             stand_still=-0.5
+            stand_still_wheel_torque = -0.5 # 零速度命令下轮子力矩惩罚
+            stand_still_wheel_vel = -0.5 # 零速度命令下轮子速度惩罚
             dof_pos_limits = -5.0
             dof_vel_limits=-1.0
             hip_default = -0.5
@@ -167,14 +169,19 @@ class M20_Cfg_Yu(BaseConfig):
             highplatform_yaw = -2.0
             highplatform_world_vel = -10.0 # 高台世界系线速度>0.75时大惩罚
             highplatform_leg_dof_vel = -1.0 # 高台上腿关节(不含轮子)速度超限的大惩罚
+            wheel_dof_vel = -1.0 # 轮子速度超限惩罚(所有地形)
+            # highplatform_stuck_nofront = -5.0 # 高台上卡住(命令>0.4但实际<0.25)且前两腿未全部触地的惩罚
         only_positive_rewards = True # if true negative total rewards are clipped at zero (avoids early termination problems)
         tracking_sigma = 0.25 # tracking reward = exp(-error^2/sigma)
         highplatform_world_speed_limit = 0.75 # [m/s] world-frame linear speed limit on highplatform
-        highplatform_leg_dof_vel_limit = 16.0 # [rad/s] 高台上腿关节(不含轮子)速度限值
+        highplatform_leg_dof_vel_limit = 18.0 # [rad/s] 高台上腿关节(不含轮子)速度限值
+        wheel_dof_vel_limit = 25.0 # [rad/s] 轮子速度限值
+        highplatform_stuck_cmd_threshold = 0.4 # [m/s] 高台"卡住"判定的命令平面速度阈值
+        highplatform_stuck_vel_threshold = 0.25 # [m/s] 高台"卡住"判定的实际平面速度阈值
         soft_dof_pos_limit = 0.9 # percentage of urdf limits, values above this limit are penalized
-        soft_dof_vel_limit = 0.95
+        soft_dof_vel_limit = 0.98
         soft_torque_limit = 0.9
-        base_height_target = 0.52
+        base_height_target = 0.60
         max_contact_force = 200. # forces above this value are penalized
 
     class normalization:
