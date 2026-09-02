@@ -67,7 +67,7 @@
         <parent link="base_link"/>
         <child link="fl_hipx"/>
         <axis xyz="-1 0 0"/>
-        <limit lower="-0.611" upper="0.436" effort="76.4" velocity="22.4"/>
+        <limit lower="-0.611" upper="0.436" effort="76.4" velocity="20"/>
     </joint>
     <link name="fl_hipy">
         <inertial>
@@ -102,7 +102,7 @@
         <parent link="fl_hipx"/>
         <child link="fl_hipy"/>
         <axis xyz="0 -1 0"/>
-        <limit lower="-2.583" upper="2.286" effort="76.4" velocity="22.4"/>
+        <limit lower="-2.583" upper="2.286" effort="76.4" velocity="20"/>
     </joint>
     <link name="fl_knee">
         <inertial>
@@ -137,7 +137,7 @@
         <parent link="fl_hipy"/>
         <child link="fl_knee"/>
         <axis xyz="0 -1 0"/>
-        <limit lower="-2.792" upper="2.809" effort="76.4" velocity="22.4"/>
+        <limit lower="-2.792" upper="2.809" effort="76.4" velocity="20"/>
     </joint>
     <link name="fl_wheel">
         <inertial>
@@ -166,7 +166,7 @@
         <parent link="fl_knee"/>
         <child link="fl_wheel"/>
         <axis xyz="0 -1 0"/>
-        <limit effort="21.6" velocity="79.3"      
+        <limit effort="21.6" velocity="35"      
         lower="-999999" 
       upper="999999" />
     </joint>
@@ -197,7 +197,7 @@
         <parent link="base_link"/>
         <child link="fr_hipx"/>
         <axis xyz="-1 0 0"/>
-        <limit lower="-0.436" upper="0.611" effort="76.4" velocity="22.4"/>
+        <limit lower="-0.436" upper="0.611" effort="76.4" velocity="20"/>
     </joint>
     <link name="fr_hipy">
         <inertial>
@@ -232,7 +232,7 @@
         <parent link="fr_hipx"/>
         <child link="fr_hipy"/>
         <axis xyz="0 -1 0"/>
-        <limit lower="-2.583" upper="2.286" effort="76.4" velocity="22.4"/>
+        <limit lower="-2.583" upper="2.286" effort="76.4" velocity="20"/>
     </joint>
     <link name="fr_knee">
         <inertial>
@@ -267,7 +267,7 @@
         <parent link="fr_hipy"/>
         <child link="fr_knee"/>
         <axis xyz="0 -1 0"/>
-        <limit lower="-2.792" upper="2.809" effort="76.4" velocity="22.4"/>
+        <limit lower="-2.792" upper="2.809" effort="76.4" velocity="20"/>
     </joint>
     <link name="fr_wheel">
         <inertial>
@@ -296,7 +296,7 @@
         <parent link="fr_knee"/>
         <child link="fr_wheel"/>
         <axis xyz="0 -1 0"/>
-        <limit effort="21.6" velocity="79.3"      lower="-999999" 
+        <limit effort="21.6" velocity="35"      lower="-999999" 
       upper="999999" />
     </joint>
     <link name="hl_hipx">
@@ -326,7 +326,7 @@
         <parent link="base_link"/>
         <child link="hl_hipx"/>
         <axis xyz="-1 0 0"/>
-        <limit lower="-0.611" upper="0.436" effort="76.4" velocity="22.4"/>
+        <limit lower="-0.611" upper="0.436" effort="76.4" velocity="20"/>
     </joint>
     <link name="hl_hipy">
         <inertial>
@@ -361,7 +361,7 @@
         <parent link="hl_hipx"/>
         <child link="hl_hipy"/>
         <axis xyz="0 -1 0"/>
-        <limit lower="-2.286" upper="2.583" effort="76.4" velocity="22.4"/>
+        <limit lower="-2.286" upper="2.583" effort="76.4" velocity="20"/>
     </joint>
     <link name="hl_knee">
         <inertial>
@@ -396,7 +396,7 @@
         <parent link="hl_hipy"/>
         <child link="hl_knee"/>
         <axis xyz="0 -1 0"/>
-        <limit lower="-2.809" upper="2.792" effort="76.4" velocity="22.4"/>
+        <limit lower="-2.809" upper="2.792" effort="76.4" velocity="20"/>
     </joint>
     <link name="hl_wheel">
         <inertial>
@@ -425,7 +425,7 @@
         <parent link="hl_knee"/>
         <child link="hl_wheel"/>
         <axis xyz="0 -1 0"/>
-        <limit effort="21.6" velocity="79.3"      lower="-999999" 
+        <limit effort="21.6" velocity="35"      lower="-999999" 
       upper="999999" />
     </joint>
     <link name="hr_hipx">
@@ -455,7 +455,7 @@
         <parent link="base_link"/>
         <child link="hr_hipx"/>
         <axis xyz="-1 0 0"/>
-        <limit lower="-0.436" upper="0.611" effort="76.4" velocity="22.4"/>
+        <limit lower="-0.436" upper="0.611" effort="76.4" velocity="20"/>
     </joint>
     <link name="hr_hipy">
         <inertial>
@@ -490,7 +490,7 @@
         <parent link="hr_hipx"/>
         <child link="hr_hipy"/>
         <axis xyz="0 -1 0"/>
-        <limit lower="-2.286" upper="2.583" effort="76.4" velocity="22.4"/>
+        <limit lower="-2.286" upper="2.583" effort="76.4" velocity="20"/>
     </joint>
     <link name="hr_knee">
         <inertial>
@@ -525,7 +525,7 @@
         <parent link="hr_hipy"/>
         <child link="hr_knee"/>
         <axis xyz="0 -1 0"/>
-        <limit lower="-2.809" upper="2.792" effort="76.4" velocity="22.4"/>
+        <limit lower="-2.809" upper="2.792" effort="76.4" velocity="20"/>
     </joint>
     <link name="hr_wheel">
         <inertial>
@@ -554,7 +554,7 @@
         <parent link="hr_knee"/>
         <child link="hr_wheel"/>
         <axis xyz="0 -1 0"/>
-        <limit effort="21.6" velocity="79.3"      lower="-999999" 
+        <limit effort="21.6" velocity="35"      lower="-999999" 
       upper="999999" />
     </joint>
 </robot>

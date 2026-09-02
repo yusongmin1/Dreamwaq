@@ -28,7 +28,7 @@ class M20_Cfg_Yu(BaseConfig):
         measured_points_y = [-0.5, -0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5]
         selected = False # select a unique terrain type and pass all arguments
         terrain_kwargs = None # Dict of arguments for selected terrain
-        max_init_terrain_level = 5 # starting curriculum state
+        max_init_terrain_level = 20 # starting curriculum state
         terrain_length = 8.
         terrain_width = 8.
         num_rows= 40 # number of terrain rows (levels)
@@ -40,12 +40,12 @@ class M20_Cfg_Yu(BaseConfig):
         slope_treshold = 0.75 # slopes above this threshold will be corrected to vertical surfaces
     class commands:
         curriculum = True
-        max_curriculum = 1.5
+        max_curriculum = 1.2
         num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
         resampling_time = 10. # time before command are changed[s]
         heading_command = True # if true: compute ang vel command from heading error
         class ranges:
-            lin_vel_x = [-1.0,1.2] # min max [m/s]
+            lin_vel_x = [-1.0,1.0] # min max [m/s]
             lin_vel_y = [-0.6,0.6]   # min max [m/s]
             ang_vel_yaw = [-1, 1]    # min max [rad/s]
             heading = [-3.14, 3.14]
@@ -119,16 +119,8 @@ class M20_Cfg_Yu(BaseConfig):
         restitution_range = [0.0,1.0]
         push_robots = True
         push_interval_s = 10
-        max_push_vel_xy = 1.0
+        max_push_vel_xy = 0.4
         max_push_ang_vel = 0.6
-        upward_drag = False
-        upward_drag_cmd_threshold = 0.5      # command planar speed [m/s]
-        upward_drag_vel_threshold = 0.2      # actual base planar speed [m/s]
-        upward_drag_z_force = 500.0         # upward force [N]
-        upward_drag_duration_steps = 10       # force duration, in control steps (10 x 0.02s = 0.2s)
-        upward_drag_forward_offset = -0.2     # force application point, 10cm in front of base [m]
-        upward_drag_max_count = 4           # max drag attempts per episode
-        upward_drag_cooldown_steps = 100     # steps between drag attempts
         randomize_base_mass = True
         added_base_mass_range = [-1,5]
         randomize_link_mass = True
@@ -161,25 +153,22 @@ class M20_Cfg_Yu(BaseConfig):
             action_rate = -0.01
             stand_still=-0.5
             dof_pos_limits = -5.0
-            dof_vel_limits=-1.0
+            dof_vel_limits=-10.0
             hip_default = -0.5
             run_still=-0.05
             highplatform_yaw = -2.0
             highplatform_world_vel = -10.0 # 高台世界系线速度>0.75时大惩罚
-            highplatform_leg_dof_vel = -1.0 # 高台上腿关节(不含轮子)速度超限的大惩罚
-            wheel_dof_vel = -1.0 # 轮子速度超限惩罚(所有地形)
             # highplatform_stuck_nofront = -5.0 # 高台上卡住(命令>0.4但实际<0.25)且前两腿未全部触地的惩罚
         only_positive_rewards = True # if true negative total rewards are clipped at zero (avoids early termination problems)
         tracking_sigma = 0.25 # tracking reward = exp(-error^2/sigma)
         highplatform_world_speed_limit = 0.75 # [m/s] world-frame linear speed limit on highplatform
-        highplatform_leg_dof_vel_limit = 18.0 # [rad/s] 高台上腿关节(不含轮子)速度限值
         wheel_dof_vel_limit = 25.0 # [rad/s] 轮子速度限值
         highplatform_stuck_cmd_threshold = 0.4 # [m/s] 高台"卡住"判定的命令平面速度阈值
         highplatform_stuck_vel_threshold = 0.25 # [m/s] 高台"卡住"判定的实际平面速度阈值
         soft_dof_pos_limit = 0.9 # percentage of urdf limits, values above this limit are penalized
-        soft_dof_vel_limit = 0.98
+        soft_dof_vel_limit = 0.95
         soft_torque_limit = 0.9
-        base_height_target = 0.60
+        base_height_target = 0.58
         max_contact_force = 200. # forces above this value are penalized
 
     class normalization:

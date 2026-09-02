@@ -1,17 +1,23 @@
 
-# Wheel-Legged Robot Reinforcement Learning Library Dreamwaq
+# 轮足机器人强化学习库 DreamWaQ
 
 
-## 🧩 Introduction
+## 🧩 项目介绍
 
-This repository provides a **Reinforcement Learning (RL) framework** for wheel-legged robots.  
-It supports **simulation-based policy training**, **Sim2Sim validation**, and **Sim2Real deployment** on real robots such as **Unitree Go2** and **custom wheel-legged platforms**.
+本仓库提供一套面向**轮足(wheel-legged)机器人**的**强化学习(RL)训练框架**, 基于 DreamWaQ 算法(隐式世界模型 + VAE 速度估计蒸馏)。
 
-### 🚀 Features
-- ✅ Supports vision-proprioception fusion reinforcement learning  
-- ✅ End-to-end pipeline for training, validation, and deployment  
-- ✅ Extensible to multiple robot platforms (Go2w, m20, B2W etc.)  
-- ✅ Supports custom reward functions and curriculum learning
+完整支持三个阶段的全流程:
+
+- **仿真训练** (Isaac Gym): 大规模并行环境 + 地形课程学习
+- **Sim2Sim 验证** (MuJoCo): ONNX 策略在赛道/楼梯等场景中离线验证
+- **Sim2Real 实机部署** (rl_sar): 已在山猫 m20 实机上完成部署
+
+### 🚀 功能特性
+- ✅ 基于 DreamWaQ 的隐式世界模型训练, 观测历史经 VAE 蒸馏速度估计
+- ✅ 训练 → Sim2Sim 验证 → 实机部署 的端到端流水线
+- ✅ 多机器人平台可扩展(山猫 m20 / Unitree GO2-W / Unitree B2-W, 16 DOF 统一结构)
+- ✅ 自定义奖励函数与地形/命令双课程学习
+- ✅ 高台/楼梯/坡道/hfield 等全套地形课程
 
 ---
 
@@ -31,11 +37,10 @@ pip install -e ./rsl_rl
 ```bash
 pip install -e .
 ```
-#### 山猫m20 已经部署实物
-![m20](m20_deploy.gif)
-## Use
+山猫 m20 已完成实机部署:
 
-### 1. train
+![m20](m20_deploy.gif)
+### 1. 训练 train
 ```bash
 python legged_gym/scripts/train.py --task=m20 --headless
 
@@ -52,18 +57,18 @@ python legged_gym/scripts/train.py --task=m20_cts --headless
 | 任务 | 机器人 | 初始高度 | kp/kd (hip/thigh/calf) | 轮 kp/kd | URDF |
 |------|--------|----------|------------------------|----------|------|
 | `m20` | 山猫 m20 | 0.60 | 80 / 2 | 0 / 0.6 | `resources/robots/m20` |
-| `b2w` | Unitree B2-W | 0.70 | 400 / 20 | 0 / 5 | `resources/robots/b2w_description` |
+| `b2w` | Unitree B2-W | 0.65 | 160 / 5 | 0 / 1 | `resources/robots/b2w_description` |
 | `go2w` | Unitree GO2-W | 0.42 | 40 / 1 | 0 / 0.5 | `resources/robots/go2w` |
 
 b2w / go2w 均为 16 DOF(4 腿 x hip/thigh/calf/wheel), 复用 M20_Robot 全部逻辑(地形课程/高台命令/奖励/域随机化), 仅机器人参数不同。
 
-m20_cts 以 m20 任务为基准(地形课程/高台命令/拖拽/奖励全部沿用),75% env 走 teacher(264维特权观测:域随机化参数70+4轮接触+187高度+3线速度),25% env 走 student(285维5帧历史),共享 actor/critic 并行训练,latent 蒸馏。测试与导出:
+m20_cts 以 m20 任务为基准(地形课程/高台命令/奖励全部沿用),75% env 走 teacher(264维特权观测:域随机化参数70+4轮接触+187高度+3线速度),25% env 走 student(285维5帧历史),共享 actor/critic 并行训练,latent 蒸馏。测试与导出:
 
 ```bash
 python legged_gym/scripts/play_cts.py --task=m20_cts
 ```
 
-### 2. play policy
+### 2. 策略回放 play
 
 ```bash
 python legged_gym/scripts/play.py --task=m20 --num_envs=50
@@ -71,10 +76,10 @@ python legged_gym/scripts/play.py --task=m20 --num_envs=50
 ```bash
 python legged_gym/scripts/play.py --task=go2w --num_envs=50
 ```
-### 2.1 专项测试脚本
+#### 2.1 专项测试脚本
 
 ```bash
-# 5x5 全高台地形测试(开启高台拖拽辅助)
+# 5x5 全高台地形测试
 python legged_gym/scripts/play_highplatform.py --task=m20
 
 # 重置原因统计: 100个机器人, 5x5地形(难度全部0.7), 按地形类型/重置原因(碰撞/翻倒/关节超速/超时)汇总
@@ -150,12 +155,12 @@ python deploy/deploy_mujoco/deploy_mujoco_m20.py -c m20_terrain.yaml
 
 连接 Xbox 手柄时，左摇杆控制移动、右摇杆控制转向；**LB / RB** 可降档 / 升档。
 
-### problem
+### 4. 常见问题
 如果你发现自己的urdf训练出来轮子不转，而是抬腿，把urdf中的轮子的continuous改为revolute,上下限改一下-99999 99999，即可训练出轮子转的模型
 
 如果训练开始时(还没学到东西)轮子就有很大的速度, 多半是 `init_state.pos` 初始高度远大于默认站姿的站立高度, 机器人落地冲击把近似无驱动的轮子(kp=0)踢飞。按 URDF 正运动学把初始高度设为略高于站立高度即可(如 go2w 站立约 0.408, 初始设 0.42)。
 
-### 为什么可以训练出轮子转的模型
+#### 为什么可以训练出轮子转的模型
 
 注意到
 
@@ -165,33 +170,31 @@ vel_scale = 5.0
 
 故轮子的action更能表现出来故更容易训练出轮子转的模型
 
-### 当前问题
+### 5. 当前问题
 
 - 上高台的动作过于剧烈，不如原始项目柔和
 - 下高台时后腿容易被卡住(下高台没有经过训练)
 - 零速度下的偏移问题
 
----
-
-## 📋 优化方向，待实验
+## 📋 优化方向(待实验)
 
 - [x] 添加高台的yaw误差惩罚（yaw偏移改善，上高台的动作还是不对，在课程难度低的1200轮，看起来还可以，再难度升高后动作不对劲了）
 - [x] 上高台速度有一个大的冲击，限制世界系下的高速z轴速度
-- [x] 将关节速度超限加入到终止条件中，上楼梯以及高台速度关节速度明显下降 2026/8/26
+- [x] 较大的速度超限惩罚，上楼梯的速度明显下降 2026/9/2
 - [x] 高台速度方向按 env 编号奇偶固定分配(奇数正向/偶数负向,严格各半)
-- [x] 高台卡住时向上拖拽辅助(外力持续10个控制步0.2s,每回合最多4次,冷却100步),防止高台卡死躺平
 - [x] Sim2Sim 曲线窗口加入轮子(foot)关节速度
-- [ ] 急加减速轮子会腾空
-- [ ] 零速度下的轮子力矩惩罚
-- [ ] 原地站立时机器人的姿态不规范
-- [ ] 原地转圈依旧没有一个完整的解决方案，虽然现在的可以使用
-- [ ] 上楼梯的步态收敛随机，全是在后面的可以，云深处那样大跨步也可以，全伸在前面那种不可以，一前一后的也不可以
-- [ ] 下楼梯步态姿态过低，像趴在楼梯上一样
+- [ ] 急加减速轮子会腾空，鲁棒性不足
+- [ ] 原地站立以及高速运动时机器人的姿态不规范
+- [ ] 原地转圈依旧没有一个完整的解决方案，
+- [x] 上楼梯的步态收敛随机，全是在后面的可以，云深处那样大跨步也可以，全伸在前面那种不可以，一前一后的也不可以，提升高度，步态改为全部在后面的，两边上楼梯都是，勉强能用 2026/9/2
+- [x] 下楼梯步态姿态过低，像趴在楼梯上一样 提升高度，可以了 2026/9/2
 - [ ] 下高台时后腿容易被卡住
-- [ ] 上高台一条腿会被卡住
-- [x] go2w 以及b2w任务(2026/8/29: 训练任务 `--task=b2w/go2w` + MuJoCo sim2sim `deploy_mujoco_b2w.py/deploy_mujoco_go2w.py`, race_track 全地形场景)
+- [ ] 上高台一条腿会被卡住，后退会有磕碰,
+- [ ] 上高台轮速过高
+- [ ] 爬楼梯爬歪
+- [x] go2w 以及b2w任务(2026/8/29: 训练任务 `--task=b2w/go2w` + MuJoCo sim2sim `deploy_mujoco_b2w.py/deploy_mujoco_go2w.py`, race_track 全地形场景)，解决之前的bug，勉强能可以使用了
 
 ---
 
-# 致谢
+## 致谢
 https://github.com/XinLang2019/Wheel_Legged_Gym

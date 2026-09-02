@@ -29,7 +29,6 @@ def play(args, *, export_policy=False, record_frames=False, move_camera=False):
     env_cfg.terrain.terrain_proportions = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
     env_cfg.noise.add_noise = False
     env_cfg.domain_rand.push_robots = False
-    env_cfg.domain_rand.upward_drag = True  # 开启高台拖拽
     env_cfg.commands.heading_command = False
 
     env, _ = task_registry.make_env(name=args.task, args=args, env_cfg=env_cfg)

@@ -60,8 +60,6 @@ class M20_Robot(BaseTask):
         for _ in range(self.cfg.control.decimation):
             self.torques = self._compute_torques(self.delayed_actions[:, _]).view(self.torques.shape)
             self.gym.set_dof_actuation_force_tensor(self.sim, gymtorch.unwrap_tensor(self.torques))
-            if self.cfg.domain_rand.upward_drag:
-                self._apply_upward_drag_force()  # 每个仿真子步(0.005s)重新施力, 才能持续
             self.gym.simulate(self.sim)
             if self.device == 'cpu':
                 self.gym.fetch_results(self.sim, True)
@@ -99,8 +97,6 @@ class M20_Robot(BaseTask):
         self.base_lin_vel[:] = quat_rotate_inverse(self.base_quat, self.root_states[:, 7:10])
         self.base_ang_vel[:] = quat_rotate_inverse(self.base_quat, self.root_states[:, 10:13])
         self.projected_gravity[:] = quat_rotate_inverse(self.base_quat, self.gravity_vec)
-        if self.cfg.domain_rand.upward_drag:
-            self._apply_upward_drag()
         self._post_physics_step_callback()
 
         # compute observations, rewards, resets, ...
@@ -119,18 +115,14 @@ class M20_Robot(BaseTask):
         # 1) 终止接触力超限（躯干等关键部位触地/碰撞）
         self.reset_buf = torch.any(torch.norm(self.contact_forces[:, self.termination_contact_indices, :], dim=-1) > 1., dim=1)
 
-        # 2) 机体翻倒
-        self.reset_buf |= self.projected_gravity[:, 2] > 0.
+        # 2) 四条腿(轮)全部高于基座 -> 四轮朝天完全翻倒, 直接终止 (轮子z vs root_states基座z)
+        feet_z = self.rigid_body_states[:, self.feet_indices, 2]
+        self.reset_buf |= torch.all(feet_z > self.root_states[:, 2].unsqueeze(1), dim=1)
 
         # 3) 超时
         self.time_out_buf = self.episode_length_buf > self.max_episode_length  # no terminal reward for time-outs
         self.reset_buf |= self.time_out_buf
 
-        # over_speed = torch.abs(self.dof_vel) > self.dof_vel_limits * self.cfg.rewards.soft_dof_vel_limit  # (num_envs, num_dof)
-        # over_speed[:, self.wheel_indices] = False  # 轮子不参与判断（此时还是 2 维，可以按列索引）
-        # over_speed = torch.any(over_speed, dim=1)  # 降为 (num_envs,)
-
-        # self.reset_buf |= over_speed 
     def reset_idx(self, env_ids):
         """ Reset some environments.
             Calls self._reset_dofs(env_ids), self._reset_root_states(env_ids), and self._resample_commands(env_ids)
@@ -166,9 +158,6 @@ class M20_Robot(BaseTask):
         self.last_actions[env_ids] = 0.
         self.last_dof_vel[env_ids] = 0.
         self.feet_air_time[env_ids] = 0.
-        self.upward_drag_count[env_ids] = 0
-        self.upward_drag_cooldown[env_ids] = 0
-        self.upward_drag_active[env_ids] = 0
         self.episode_length_buf[env_ids] = 0
         self.reset_buf[env_ids] = 1
         # fill extras
@@ -381,7 +370,7 @@ class M20_Robot(BaseTask):
         if len(env_ids) == 0:
             return
 
-        self.commands[env_ids, 0] = torch_rand_float(self.command_ranges["lin_vel_x"][0], self.command_ranges["lin_vel_x"][1], (len(env_ids), 1), device=self.device).squeeze(1)
+        self.commands[env_ids, 0] = torch_rand_float(-1,1, (len(env_ids), 1), device=self.device).squeeze(1)
         self.commands[env_ids, 1] = torch_rand_float(self.command_ranges["lin_vel_y"][0], self.command_ranges["lin_vel_y"][1], (len(env_ids), 1), device=self.device).squeeze(1)
         if self.cfg.commands.heading_command:
             self.commands[env_ids, 3] = torch_rand_float(self.command_ranges["heading"][0], self.command_ranges["heading"][1], (len(env_ids), 1), device=self.device).squeeze(1)
@@ -440,7 +429,7 @@ class M20_Robot(BaseTask):
         Args:
             env_ids (List[int]): Environemnt ids
         """
-        self.dof_pos[env_ids] = self.default_dof_pos #* torch_rand_float(0.5, 1.5, (len(env_ids), self.num_dof), device=self.device)
+        self.dof_pos[env_ids] = self.default_dof_pos * torch_rand_float(0.5, 1.5, (len(env_ids), self.num_dof), device=self.device)
         self.dof_vel[env_ids] = 0.
 
         env_ids_int32 = env_ids.to(dtype=torch.int32)
@@ -467,66 +456,6 @@ class M20_Robot(BaseTask):
         self.gym.set_actor_root_state_tensor_indexed(self.sim,
                                                      gymtorch.unwrap_tensor(self.root_states),
                                                      gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
-
-    def _apply_upward_drag(self):
-        """拖拽触发/计时逻辑, 每个控制步(0.02s)调用一次:
-        卡在高台 -> 触发, active 置为 upward_drag_duration_steps(单位: 控制步, 每步0.02s)"""
-        if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
-            return
-
-        cfg = self.cfg.domain_rand
-        self.upward_drag_cooldown = torch.clamp(self.upward_drag_cooldown - 1, min=0)
-        # 每个控制步递减一次持续计数(施力本身在 _apply_upward_drag_force 中按仿真子步进行)
-        self.upward_drag_active = torch.clamp(self.upward_drag_active - 1, min=0)
-
-        cmd_speed = torch.norm(self.commands[:, :2], dim=1)
-        actual_speed = torch.norm(self.base_lin_vel[:, :2], dim=1)
-        is_highplatform = self.terrain_types >= self.highplatform_col_min
-        cmd_ok = cmd_speed > cfg.upward_drag_cmd_threshold
-        vel_low = actual_speed < cfg.upward_drag_vel_threshold
-        ready = self.upward_drag_cooldown == 0
-        has_chances = self.upward_drag_count < cfg.upward_drag_max_count
-
-        # 触发新一轮拖拽(正在拖拽中的 env 不重复触发)
-        need_drag = is_highplatform & cmd_ok & vel_low & ready & has_chances & (self.upward_drag_active == 0)
-        drag_env_ids = need_drag.nonzero(as_tuple=False).flatten()
-        if len(drag_env_ids) > 0:
-            self.upward_drag_count[drag_env_ids] += 1
-            self.upward_drag_cooldown[drag_env_ids] = cfg.upward_drag_cooldown_steps
-            self.upward_drag_active[drag_env_ids] = cfg.upward_drag_duration_steps
-
-    def _apply_upward_drag_force(self):
-        """在每个仿真子步(sim dt=0.005s)对 active>0 的 env 重新施加向上的力,
-        使力在 duration 个控制步(duration*0.02s)内持续不断"""
-        if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
-            return
-        cfg = self.cfg.domain_rand
-
-        active_ids = (self.upward_drag_active > 0).nonzero(as_tuple=False).flatten()
-        if len(active_ids) == 0:
-            return
-
-        forces = torch.zeros(self.num_envs, self.num_bodies, 3, device=self.device)
-        force_positions = self.rigid_body_states[:, :, 0:3].clone()
-
-        offset = torch.tensor(
-            [cfg.upward_drag_forward_offset, 0.0, 0.0], device=self.device,
-        )
-        forward_offset = quat_apply(
-            self.base_quat[active_ids],
-            offset.unsqueeze(0).expand(len(active_ids), -1),
-        )
-        base_pos = self.rigid_body_states[active_ids, self.base_body_index, 0:3]
-        force_positions[active_ids, self.base_body_index] = base_pos + forward_offset
-        forces[active_ids, self.base_body_index, 2] = cfg.upward_drag_z_force
-
-        self.gym.apply_rigid_body_force_at_pos_tensors(
-            self.sim,
-            gymtorch.unwrap_tensor(forces),
-            gymtorch.unwrap_tensor(force_positions),
-            gymapi.ENV_SPACE,
-        )
-
 
     def _push_robots(self):
         """ Random pushes the robots. Emulates an impulse by setting a randomized base velocity. 
@@ -625,9 +554,6 @@ class M20_Robot(BaseTask):
         self.last_last_actions = torch.zeros(self.num_envs, self.num_actions, dtype=torch.float, device=self.device, requires_grad=False)  
         self.feet_air_time = torch.zeros(self.num_envs, self.feet_indices.shape[0], dtype=torch.float, device=self.device, requires_grad=False)
         self.last_contacts = torch.zeros(self.num_envs, len(self.feet_indices), dtype=torch.bool, device=self.device, requires_grad=False)
-        self.upward_drag_count = torch.zeros(self.num_envs, dtype=torch.long, device=self.device, requires_grad=False)
-        self.upward_drag_cooldown = torch.zeros(self.num_envs, dtype=torch.long, device=self.device, requires_grad=False)
-        self.upward_drag_active = torch.zeros(self.num_envs, dtype=torch.long, device=self.device, requires_grad=False)
         self.base_lin_vel = quat_rotate_inverse(self.base_quat, self.root_states[:, 7:10])
         self.base_ang_vel = quat_rotate_inverse(self.base_quat, self.root_states[:, 10:13])
         self.projected_gravity = quat_rotate_inverse(self.base_quat, self.gravity_vec)
