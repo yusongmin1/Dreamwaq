@@ -20,12 +20,12 @@ class B2W_Cfg(M20_Cfg_Yu):
             'FR_foot_joint': 0.0,   # [rad]
 
             'RL_hip_joint': 0.0,   # [rad]
-            'RL_thigh_joint': 0.8,    # [rad]
+            'RL_thigh_joint': 1.0,    # [rad]
             'RL_calf_joint': -1.5,  # [rad]
             'RL_foot_joint': 0.0,    # [rad]
 
             'RR_hip_joint': 0.0,   # [rad]
-            'RR_thigh_joint': 0.8,    # [rad]
+            'RR_thigh_joint': 1.0,    # [rad]
             'RR_calf_joint': -1.5,  # [rad]
             'RR_foot_joint': 0.0,    # [rad]
         }
@@ -36,7 +36,7 @@ class B2W_Cfg(M20_Cfg_Yu):
         stiffness = {'hip_joint': 160., 'thigh_joint': 160., 'calf_joint': 160., 'foot_joint': 0.}  # [N*m/rad]
         damping   = {'hip_joint': 5., 'thigh_joint': 5., 'calf_joint': 5., 'foot_joint': 1.}     # [N*m*s/rad]
         action_scale = 0.25
-        vel_scale = 5.0
+        vel_scale = 10.0
         decimation = 4
     # class terrain(M20_Cfg_Yu.terrain):
     #     terrain_proportions = [0.15, 0.15, 0.3, 0.3, 0.1]
@@ -62,7 +62,7 @@ class B2W_Cfg(M20_Cfg_Yu):
         base_height_target = 0.65 # 期望高度 [m] (默认站姿站立约0.624, 负载下轻微压缩)
         max_contact_force = 100.
         soft_dof_pos_limit = 1.
-        soft_dof_vel_limit = 1.
+        soft_dof_vel_limit =1.0
         soft_torque_limit = 1.
 class B2W_PPO(M20_PPO_Yu):
     class runner(M20_PPO_Yu.runner):

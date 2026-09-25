@@ -221,7 +221,7 @@
     <parent link="FL_calf" />
     <child link="FL_foot" />
     <axis xyz="0 1 0" />
-    <limit effort="20" velocity="50"       lower="-999999" 
+    <limit effort="20" velocity="35"       lower="-999999" 
       upper="999999" />
   </joint>
   <link name="FR_hip">
@@ -332,7 +332,7 @@
     <parent link="FR_calf" />
     <child link="FR_foot" />
     <axis xyz="0 1 0" />
-    <limit effort="20" velocity="50"       lower="-999999" 
+    <limit effort="20" velocity="35"       lower="-999999" 
       upper="999999" />
   </joint>
   <link name="RL_hip">
@@ -440,7 +440,7 @@
     <parent link="RL_calf" />
     <child link="RL_foot" />
     <axis xyz="0 1 0" />
-    <limit effort="20" velocity="50"       lower="-999999" 
+    <limit effort="20" velocity="35"       lower="-999999" 
       upper="999999" />
   </joint>
   <link name="RR_hip">
@@ -551,7 +551,7 @@
     <parent link="RR_calf" />
     <child link="RR_foot" />
     <axis xyz="0 1 0" />
-    <limit effort="20" velocity="50"       lower="-999999" 
+    <limit effort="20" velocity="35"       lower="-999999" 
       upper="999999" />
   </joint>
   <link name="f_oc_link">

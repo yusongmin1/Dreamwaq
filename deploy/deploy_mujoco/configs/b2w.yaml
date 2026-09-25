@@ -16,8 +16,8 @@ kds: [5, 5, 5, 1, 5, 5, 5, 1,5, 5, 5, 1,5, 5, 5, 1,]
 default_angles: [
                   0.0, 0.8, -1.5, 0.0,
                   0.0, 0.8, -1.5, 0.0,
-                  0.0, 0.8, -1.5, 0.0,
-                  0.0, 0.8, -1.5, 0.0]
+                  0.0, 1.0, -1.5, 0.0,
+                  0.0, 1.0, -1.5, 0.0]
 
 # URDF effort 限制: hip 200, thigh 200, calf 320, wheel 20
 torque_limits: [200., 200., 320., 20.,
@@ -41,7 +41,7 @@ base_body_names: ["base_link"]
 cmd_arrow_rgba: [0.15, 0.45, 1.0, 0.95]
 vel_arrow_rgba: [0.15, 0.85, 0.25, 0.95]
 
-vel_scale: 5
+vel_scale: 10
 action_scale: 0.25
 
 num_actions: 16

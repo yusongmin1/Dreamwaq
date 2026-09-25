@@ -4,6 +4,8 @@ from collections import deque
 
 import matplotlib
 matplotlib.use('TkAgg')  # 本机 Qt 的 xcb 插件不可用，强制使用 Tk 后端
+# HiDPI/缩放异常时 Tk 工具栏图标会算出 0 尺寸，触发 PIL ValueError
+matplotlib.rcParams['toolbar'] = 'None'
 import matplotlib.pyplot as plt
 import mujoco.viewer
 import mujoco
@@ -84,7 +86,17 @@ class JointVelocityPlotter:
         self._count = 0
 
         plt.ion()
-        self.fig, self.axes = plt.subplots(2, 2, figsize=(10, 6.5))
+        try:
+            self.fig, self.axes = plt.subplots(2, 2, figsize=(10, 6.5))
+        except Exception as e:
+            # 部分环境下 Tk 后端创建窗口失败；降级为无图模式，不阻断部署
+            print(f"[warn] JointVelocityPlotter disabled: {e}")
+            self.fig = None
+            self.axes = None
+            self.lines = {}
+            self.enabled = False
+            return
+        self.enabled = True
         try:
             self.fig.canvas.manager.set_window_title('Joint Velocities (real-time)')
         except Exception:
@@ -114,6 +126,8 @@ class JointVelocityPlotter:
             dq: 16 维关节速度（策略顺序 FL/FR/RL/RR × [hip, thigh, calf, foot]），
                 四个关节全部绘制（foot 即轮子速度）
         """
+        if not getattr(self, 'enabled', True):
+            return
         self.t_buf.append(float(t))
         self.dq_buf.append(np.asarray(dq, dtype=np.float64).reshape(4, 4).copy())
         self._count += 1
@@ -130,7 +144,8 @@ class JointVelocityPlotter:
         plt.pause(0.001)
 
     def close(self):
-        plt.close(self.fig)
+        if getattr(self, 'fig', None) is not None:
+            plt.close(self.fig)
 
 
 class MujocoDeploy:

@@ -5,9 +5,9 @@ class M20_Cfg_Yu(BaseConfig):
         num_envs = 4096
         num_observations = 57
         num_obs_hist = 5
-        num_privileged_obs = 57+3+187 
+        num_privileged_obs = 57+3+12+187 
         num_latent_dims=16
-        num_explicit_dims=3
+        num_explicit_dims=3+12
         num_history_obs=num_obs_hist*num_observations
         num_actions = 16
         episode_length_s = 20 # episode length in seconds
@@ -34,13 +34,13 @@ class M20_Cfg_Yu(BaseConfig):
         num_rows= 40 # number of terrain rows (levels)
         num_cols = 20 # number of terrain cols (types)
         # terrain types: [smooth slope, rough slope, stairs up, stairs down, highplatform]
-        terrain_proportions = [0.1, 0.15, 0.25, 0.25, 0.1,0.15]
+        terrain_proportions = [0.1, 0.15, 0.25, 0.25, 0.10,0.1500]
         # terrain_proportions =   [0., 0., 0., 0., 0.,1.0]
         # trimesh only:
         slope_treshold = 0.75 # slopes above this threshold will be corrected to vertical surfaces
     class commands:
         curriculum = True
-        max_curriculum = 1.2
+        max_curriculum = 1.25
         num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
         resampling_time = 10. # time before command are changed[s]
         heading_command = True # if true: compute ang vel command from heading error
@@ -71,13 +71,13 @@ class M20_Cfg_Yu(BaseConfig):
             'fr_wheel_joint': 0.0,   # [rad]
 
             'hl_hipx_joint': 0.0,   # [rad]
-            'hl_hipy_joint': 0.6,    # [rad]
-            'hl_knee_joint': -1.0,  # [rad]
+            'hl_hipy_joint': -0.6,    # [rad]
+            'hl_knee_joint': 1.0,  # [rad]
             'hl_wheel_joint': 0.0,    # [rad]
 
             'hr_hipx_joint': 0.0,   # [rad]
-            'hr_hipy_joint': 0.6,    # [rad]
-            'hr_knee_joint': -1.0,  # [rad]
+            'hr_hipy_joint': -0.6,    # [rad]
+            'hr_knee_joint': 1.0,  # [rad]
             'hr_wheel_joint': 0.0,    # [rad]
         }
 
@@ -94,7 +94,7 @@ class M20_Cfg_Yu(BaseConfig):
         name = "m20"
         foot_name = "wheel"
         wheel_name =["wheel"] 
-        penalize_contacts_on = ["hipx", "hipy","knee","base"]
+        penalize_contacts_on = ["hipx", "hipy","knee"]
         terminate_after_contacts_on = []
         disable_gravity = False
         collapse_fixed_joints = True # merge bodies connected by fixed joints. Specific fixed joints can be kept by adding " <... dont_collapse="true">
@@ -144,7 +144,7 @@ class M20_Cfg_Yu(BaseConfig):
             lin_vel_z = -2 # 惩罚机器人在Z轴上的速度 对应现象为机器人上下起伏很大
             ang_vel_xy = -0.05 # 惩罚机器人在X轴和Y轴上的角速度 对应现象为遏制机器人左右晃动和前后晃动
             orientation = -0.2 # 强烈鼓励机器人与初始姿态的基座方向一致
-            base_height=-10.0
+            base_height=-5.0
             torques = -0.00005#
             dof_vel = -1e-3
             dof_acc = -2.5e-7
@@ -154,21 +154,27 @@ class M20_Cfg_Yu(BaseConfig):
             stand_still=-0.5
             dof_pos_limits = -5.0
             dof_vel_limits=-10.0
-            hip_default = -0.5
-            run_still=-0.05
+            # hip_default = -0.5
+            run_still=-0.5
             highplatform_yaw = -2.0
-            highplatform_world_vel = -10.0 # 高台世界系线速度>0.75时大惩罚
+            highplatform_height = 1.0 # 高台基座高度>阈值奖励(不上掉坑)
+            highplatform_front_force = 1.5 # 高台前轮上台+前轮垂直接触力达标奖励
+            highplatform_front_wheel_height_diff = -2.0 # 高台左右前轮高度差>0.25m惩罚
+            # highplatform_world_vel = -10.0 # 高台世界系线速度>0.75时大惩罚
             # highplatform_stuck_nofront = -5.0 # 高台上卡住(命令>0.4但实际<0.25)且前两腿未全部触地的惩罚
-        only_positive_rewards = True # if true negative total rewards are clipped at zero (avoids early termination problems)
+        only_positive_rewards = False # if true negative total rewards are clipped at zero (avoids early termination problems)
         tracking_sigma = 0.25 # tracking reward = exp(-error^2/sigma)
         highplatform_world_speed_limit = 0.75 # [m/s] world-frame linear speed limit on highplatform
         wheel_dof_vel_limit = 25.0 # [rad/s] 轮子速度限值
         highplatform_stuck_cmd_threshold = 0.4 # [m/s] 高台"卡住"判定的命令平面速度阈值
         highplatform_stuck_vel_threshold = 0.25 # [m/s] 高台"卡住"判定的实际平面速度阈值
+        highplatform_height_threshold = 0.3 # [m] 高台基座世界系高度奖励阈值
+        highplatform_front_force_threshold = 120.0 # [N] 高台前轮垂直接触力阈值
+        highplatform_front_wheel_height_diff_threshold = 0.25 # [m] 高台左右前轮高度差惩罚阈值
         soft_dof_pos_limit = 0.9 # percentage of urdf limits, values above this limit are penalized
         soft_dof_vel_limit = 0.95
         soft_torque_limit = 0.9
-        base_height_target = 0.58
+        base_height_target = 0.55
         max_contact_force = 200. # forces above this value are penalized
 
     class normalization:

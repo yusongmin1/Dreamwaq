@@ -21,10 +21,10 @@ class B2W_Robot(M20_Robot):
         vel[:, self.wheel_indices] *= 0.1
         return torch.sum(torch.square(vel), dim=1)
 
-    def _reward_tracking_ang_vel(self):
-        # 与原仓库一致: 无高台屏蔽
-        ang_vel_error = torch.square(self.commands[:, 2] - self.base_ang_vel[:, 2])
-        return torch.exp(-ang_vel_error / self.cfg.rewards.tracking_sigma)
+    # def _reward_tracking_ang_vel(self):
+    #     # 与原仓库一致: 无高台屏蔽
+    #     ang_vel_error = torch.square(self.commands[:, 2] - self.base_ang_vel[:, 2])
+    #     return torch.exp(-ang_vel_error / self.cfg.rewards.tracking_sigma)
 
     def _reward_feet_air_time(self):
         # 与原仓库一致: 鼓励长迈步, 仅在腾空后首次触地时结算, 零指令不给奖励

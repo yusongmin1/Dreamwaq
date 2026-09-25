@@ -74,7 +74,7 @@ python legged_gym/scripts/play_cts.py --task=m20_cts
 python legged_gym/scripts/play.py --task=m20 --num_envs=50
 ```
 ```bash
-python legged_gym/scripts/play.py --task=go2w --num_envs=50
+python legged_gym/scripts/play.py --task=b2w --num_envs=50
 ```
 #### 2.1 专项测试脚本
 

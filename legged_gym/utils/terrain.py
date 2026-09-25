@@ -119,7 +119,8 @@ class Terrain:
             rectangle_max_size = 2.
             terrain_utils.discrete_obstacles_terrain(terrain, discrete_obstacles_height, rectangle_min_size, rectangle_max_size, num_rectangles, platform_size=3.)
         elif choice < self.proportions[5]:
-            terrain_utils.pyramid_stairs_terrain(terrain, step_width=1., step_height=-step_height_high, platform_size=3.)
+            pit_terrain(terrain, depth=step_height_high, platform_size=4.)
+            # terrain_utils.pyramid_stairs_terrain(terrain, step_width=1., step_height=-step_height_high, platform_size=3.)
         # elif choice < self.proportions[6]:
         #     terrain_utils.random_uniform_terrain(terrain, min_height=-0.05, max_height=0.05, step=0.005, downsampled_scale=0.2)
         # else:

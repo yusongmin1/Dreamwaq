@@ -232,9 +232,12 @@ class M20_Robot(BaseTask):
             self.dof_vel * self.obs_scales.dof_vel,
             self.actions
         ), dim=-1)
-        self.vel_buf= self.base_lin_vel
-        self.privileged_obs_buf = torch.cat([            
+        # DreamWaQ 显式估计目标: 基座线速度(3) + penalize_contacts_on 对应 link 接触状态(0/1)
+        leg_contact_mask = (torch.norm(self.contact_forces[:, self.penalised_contact_indices, :], dim=-1) > 1.).float()
+        self.vel_buf = torch.cat((self.base_lin_vel, leg_contact_mask), dim=-1)
+        self.privileged_obs_buf = torch.cat([
             self.base_lin_vel*self.obs_scales.lin_vel,
+            leg_contact_mask,
             heights,
             self.obs_buf
         ],dim=-1)
@@ -389,11 +392,11 @@ class M20_Robot(BaseTask):
             return
 
         # 按env编号奇偶固定分配方向: 奇数env(50%)速度>0, 偶数env速度<0
-        neg_mask = (hp_env_ids % 2) == 0
+        # neg_mask = (hp_env_ids % 2) == 0
         vx = torch.empty(len(hp_env_ids), device=self.device)
-        n_neg = neg_mask.sum()
-        vx[neg_mask] = torch_rand_float(hp_cfg.lin_vel_x_neg[0], hp_cfg.lin_vel_x_neg[1], (n_neg, 1), device=self.device).squeeze(1)
-        vx[~neg_mask] = torch_rand_float(hp_cfg.lin_vel_x_pos[0], hp_cfg.lin_vel_x_pos[1], ((~neg_mask).sum(), 1), device=self.device).squeeze(1)
+        # n_neg = neg_mask.sum()
+        # vx[neg_mask] = torch_rand_float(hp_cfg.lin_vel_x_neg[0], hp_cfg.lin_vel_x_neg[1], (n_neg, 1), device=self.device).squeeze(1)
+        vx= torch_rand_float(hp_cfg.lin_vel_x_pos[0], hp_cfg.lin_vel_x_pos[1], (len(hp_env_ids), 1), device=self.device).squeeze(1)
         self.commands[hp_env_ids, 0] = vx
         self.commands[hp_env_ids, 1] = torch_rand_float(hp_cfg.lin_vel_y[0], hp_cfg.lin_vel_y[1], (len(hp_env_ids), 1), device=self.device).squeeze(1)
         if self.cfg.commands.heading_command:
@@ -577,8 +580,22 @@ class M20_Robot(BaseTask):
                 if self.cfg.control.control_type in ["P", "V"]:
                     print(f"PD gain of joint {name} were not defined, setting them to zero")
         self.default_dof_pos = self.default_dof_pos.unsqueeze(0)
+        # 按实际接触 link 数对齐显式估计 / 特权观测维度
+        # M20: hipx/hipy/knee x4 = 12; B2W: hip/thigh/calf x4 + base = 13
+        n_contact = int(self.penalised_contact_indices.numel())
+        n_heights = int(self.num_height_points) if self.cfg.terrain.measure_heights else 0
+        self.cfg.env.num_explicit_dims = 3 + n_contact
+        self.cfg.env.num_privileged_obs = self.num_obs + 3 + n_contact + n_heights
+        self.num_privileged_obs = self.cfg.env.num_privileged_obs
+        self.privileged_obs_buf = torch.zeros(
+            self.num_envs, self.num_privileged_obs, device=self.device, dtype=torch.float)
+        print(f"[obs dims] num_explicit={self.cfg.env.num_explicit_dims} "
+              f"(vel3+contact{n_contact}), num_privileged={self.num_privileged_obs} "
+              f"(obs{self.num_obs}+vel3+contact{n_contact}+heights{n_heights})")
+
         self.obs_hist_buf=torch.zeros(self.num_envs, self.cfg.env.num_history_obs,  dtype=torch.float, device=self.device)
-        self.vel_buf=torch.zeros(self.num_envs, 3, dtype=torch.float, device=self.device)
+        # DreamWaQ 显式估计目标占位: 基座线速度(3) + 接触状态, 实际值在 compute_observations 中填充
+        self.vel_buf=torch.zeros(self.num_envs, self.cfg.env.num_explicit_dims, dtype=torch.float, device=self.device)
         #store friction and restitution
         self.friction_coeffs = torch.ones(self.num_envs, 1, dtype=torch.float, device=self.device, requires_grad=False)
         self.restitution_coeffs = torch.zeros(self.num_envs, 1, dtype=torch.float, device=self.device, requires_grad=False)
@@ -753,6 +770,24 @@ class M20_Robot(BaseTask):
         self.feet_indices = torch.zeros(len(feet_names), dtype=torch.long, device=self.device, requires_grad=False)
         for i in range(len(feet_names)):
             self.feet_indices[i] = self.gym.find_actor_rigid_body_handle(self.envs[0], self.actor_handles[0], feet_names[i])
+
+        # 前后轮索引(高台奖励: front_force / front_wheel_height_diff)
+        # 兼容 fl/fr/hl/hr 与 FL/FR/RL/RR 两种命名
+        front_feet = [n for n in feet_names if n.upper().startswith(("FL", "FR"))]
+        rear_feet = [n for n in feet_names if n.upper().startswith(("RL", "RR", "HL", "HR"))]
+        if len(front_feet) == 0 or len(rear_feet) == 0:
+            # 回退: feet_names 约定顺序为 FL, FR, RL, RR
+            front_feet = list(feet_names[:2])
+            rear_feet = list(feet_names[2:4])
+            print(f"[warn] front/rear foot name filter empty, fallback to feet_names order: "
+                  f"front={front_feet}, rear={rear_feet}")
+        self.front_feet_indices = torch.zeros(len(front_feet), dtype=torch.long, device=self.device, requires_grad=False)
+        self.rear_feet_indices = torch.zeros(len(rear_feet), dtype=torch.long, device=self.device, requires_grad=False)
+        for i, name in enumerate(front_feet):
+            self.front_feet_indices[i] = self.gym.find_actor_rigid_body_handle(self.envs[0], self.actor_handles[0], name)
+        for i, name in enumerate(rear_feet):
+            self.rear_feet_indices[i] = self.gym.find_actor_rigid_body_handle(self.envs[0], self.actor_handles[0], name)
+        print(f"###front_feet: {front_feet}, rear_feet: {rear_feet}")
 
         self.penalised_contact_indices = torch.zeros(len(penalized_contact_names), dtype=torch.long, device=self.device, requires_grad=False)
         for i in range(len(penalized_contact_names)):
@@ -991,10 +1026,10 @@ class M20_Robot(BaseTask):
         return hip_err
     
     def _reward_run_still(self):
-        # Penalize motion at running commands; disabled on highplatform
+        # Penalize motion at running commands; L2 范数偏离默认关节角
         dof_err = self.dof_pos - self.default_dof_pos
-        dof_err[:,self.wheel_indices] = 0
-        reward = torch.sum(torch.abs(dof_err), dim=1) * (torch.norm(self.commands[:, :2], dim=1) > 0.1)
+        dof_err[:, self.wheel_indices] = 0
+        reward = torch.linalg.norm(dof_err, dim=1) * (torch.norm(self.commands[:, :2], dim=1) > 0.1)
         return reward
 
     def _reward_highplatform_yaw(self):
@@ -1007,6 +1042,36 @@ class M20_Robot(BaseTask):
         commanded_heading = self.commands[:, 3]
         heading_error = wrap_to_pi(commanded_heading - actual_heading)
         return torch.square(heading_error) * is_hp.float()
+
+    def _reward_highplatform_height(self):
+        """高台上基座世界系高度超过阈值时给奖励(鼓励不上掉坑)。"""
+        if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
+            return torch.zeros(self.num_envs, device=self.device)
+        is_hp = self.terrain_types >= self.highplatform_col_min
+        above = self.root_states[:, 2] > self.cfg.rewards.highplatform_height_threshold
+        return above.float() * is_hp.float()
+
+    def _reward_highplatform_front_force(self):
+        """高台上: 前轮高于z=0、后轮低于z=0、且前轮垂直接触力均超阈值 -> 奖励(攀爬姿态)。"""
+        if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
+            return torch.zeros(self.num_envs, device=self.device)
+        is_hp = self.terrain_types >= self.highplatform_col_min
+        front_z = self.rigid_body_states[:, self.front_feet_indices, 2]
+        rear_z = self.rigid_body_states[:, self.rear_feet_indices, 2]
+        pose_ok = torch.all(front_z > 0., dim=1) & torch.all(rear_z < 0., dim=1)
+        front_fz = self.contact_forces[:, self.front_feet_indices, 2]
+        force_ok = torch.all(front_fz > self.cfg.rewards.highplatform_front_force_threshold, dim=1)
+        return (pose_ok & force_ok & is_hp).float()
+
+    def _reward_highplatform_front_wheel_height_diff(self):
+        """高台上惩罚左右前轮世界系高度差超过阈值(默认0.25m)。"""
+        if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
+            return torch.zeros(self.num_envs, device=self.device)
+        is_hp = self.terrain_types >= self.highplatform_col_min
+        front_z = self.rigid_body_states[:, self.front_feet_indices, 2]
+        height_diff = torch.abs(front_z[:, 0] - front_z[:, 1])
+        excess = torch.clamp(height_diff - self.cfg.rewards.highplatform_front_wheel_height_diff_threshold, min=0.)
+        return excess * is_hp.float()
 
     def _reward_highplatform_world_vel(self):
         """Penalize excessive world-frame linear speed on highplatform."""
