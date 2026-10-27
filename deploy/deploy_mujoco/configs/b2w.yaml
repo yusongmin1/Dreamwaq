@@ -42,7 +42,15 @@ cmd_arrow_rgba: [0.15, 0.45, 1.0, 0.95]
 vel_arrow_rgba: [0.15, 0.85, 0.25, 0.95]
 
 vel_scale: 10
-action_scale: 0.25
+# 与训练一致: hip=0.125, thigh/calf/foot=0.25 (FL/FR/RL/RR)
+action_scale: [
+  0.125, 0.25, 0.25, 0.25,
+  0.125, 0.25, 0.25, 0.25,
+  0.125, 0.25, 0.25, 0.25,
+  0.125, 0.25, 0.25, 0.25]
+
+# 关节速度实时曲线窗口（默认关闭；也可用命令行 --plot_joint_vel）
+plot_joint_vel: false
 
 num_actions: 16
 num_obs: 57

@@ -32,10 +32,11 @@ MUJOCO_LOG.TXT
 
 # Zcode generated
 .zcode/
+.kilo/
 AGENTS.md
 CLAUDE.md
 TODO.md
 zcode-notes/
 
-logs/
-.logs/
+# logs/
+# .logs/

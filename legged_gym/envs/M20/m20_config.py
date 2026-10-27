@@ -46,7 +46,7 @@ class M20_Cfg_Yu(BaseConfig):
         heading_command = True # if true: compute ang vel command from heading error
         class ranges:
             lin_vel_x = [-1.0,1.0] # min max [m/s]
-            lin_vel_y = [-0.6,0.6]   # min max [m/s]
+            lin_vel_y = [-1.0,1.0]   # min max [m/s]
             ang_vel_yaw = [-1, 1]    # min max [rad/s]
             heading = [-3.14, 3.14]
         class highplatform:
@@ -54,6 +54,7 @@ class M20_Cfg_Yu(BaseConfig):
             lin_vel_x_pos = [0.35, 1.0]    # 正向 min max [m/s]
             lin_vel_y = [0.0, 0.0]   # forward only
             heading = [-0.0, 0.0]  # -10 deg to 10 deg [rad], resampled to commands[:, 3]
+            max_heading_error = 0.5236  # 高台上与命令朝向误差超过此值(30度, rad)直接终止
     class init_state:
         pos = [0.0, 0.0, 0.60] # x,y,z [m]
         rot = [0.0, 0.0, 0.0, 1.0] # x,y,z,w [quat]
@@ -71,13 +72,13 @@ class M20_Cfg_Yu(BaseConfig):
             'fr_wheel_joint': 0.0,   # [rad]
 
             'hl_hipx_joint': 0.0,   # [rad]
-            'hl_hipy_joint': -0.6,    # [rad]
-            'hl_knee_joint': 1.0,  # [rad]
+            'hl_hipy_joint': 0.6,    # [rad]
+            'hl_knee_joint': -1.0,  # [rad]
             'hl_wheel_joint': 0.0,    # [rad]
 
             'hr_hipx_joint': 0.0,   # [rad]
-            'hr_hipy_joint': -0.6,    # [rad]
-            'hr_knee_joint': 1.0,  # [rad]
+            'hr_hipy_joint': 0.6,    # [rad]
+            'hr_knee_joint': -1.0,  # [rad]
             'hr_wheel_joint': 0.0,    # [rad]
         }
 
@@ -118,8 +119,8 @@ class M20_Cfg_Yu(BaseConfig):
         randomize_restitution = True
         restitution_range = [0.0,1.0]
         push_robots = True
-        push_interval_s = 10
-        max_push_vel_xy = 0.4
+        push_interval_s = 4
+        max_push_vel_xy = 1.0
         max_push_ang_vel = 0.6
         randomize_base_mass = True
         added_base_mass_range = [-1,5]
@@ -139,8 +140,8 @@ class M20_Cfg_Yu(BaseConfig):
 
     class rewards:
         class scales:
-            tracking_lin_vel = 2.0 # 惩罚当前机器人在X、Y方向速度与命令不一致
-            tracking_ang_vel = 1.0 # 惩罚当前机器人在角度转向速度与命令不一致
+            tracking_lin_vel = 3.0 # 惩罚当前机器人在X、Y方向速度与命令不一致
+            tracking_ang_vel = 1.5 # 惩罚当前机器人在角度转向速度与命令不一致
             lin_vel_z = -2 # 惩罚机器人在Z轴上的速度 对应现象为机器人上下起伏很大
             ang_vel_xy = -0.05 # 惩罚机器人在X轴和Y轴上的角速度 对应现象为遏制机器人左右晃动和前后晃动
             orientation = -0.2 # 强烈鼓励机器人与初始姿态的基座方向一致
@@ -154,12 +155,12 @@ class M20_Cfg_Yu(BaseConfig):
             stand_still=-0.5
             dof_pos_limits = -5.0
             dof_vel_limits=-10.0
-            # hip_default = -0.5
-            run_still=-0.5
-            highplatform_yaw = -2.0
-            highplatform_height = 1.0 # 高台基座高度>阈值奖励(不上掉坑)
-            highplatform_front_force = 1.5 # 高台前轮上台+前轮垂直接触力达标奖励
-            highplatform_front_wheel_height_diff = -2.0 # 高台左右前轮高度差>0.25m惩罚
+            hip_default = -0.25
+            run_still=-0.1
+            highplatform_yaw = -3.5
+            # highplatform_height = 1.0 # 高台基座高度>阈值奖励(不上掉坑)
+            # highplatform_front_force = 1.5 # 高台前轮上台+前轮垂直接触力达标奖励
+            # highplatform_front_wheel_height_diff = -2.0 # 高台左右前轮高度差>0.25m惩罚
             # highplatform_world_vel = -10.0 # 高台世界系线速度>0.75时大惩罚
             # highplatform_stuck_nofront = -5.0 # 高台上卡住(命令>0.4但实际<0.25)且前两腿未全部触地的惩罚
         only_positive_rewards = False # if true negative total rewards are clipped at zero (avoids early termination problems)
@@ -174,7 +175,7 @@ class M20_Cfg_Yu(BaseConfig):
         soft_dof_pos_limit = 0.9 # percentage of urdf limits, values above this limit are penalized
         soft_dof_vel_limit = 0.95
         soft_torque_limit = 0.9
-        base_height_target = 0.55
+        base_height_target = 0.52
         max_contact_force = 200. # forces above this value are penalized
 
     class normalization:

@@ -2,11 +2,6 @@ import os
 import time
 from collections import deque
 
-import matplotlib
-matplotlib.use('TkAgg')  # 本机 Qt 的 xcb 插件不可用，强制使用 Tk 后端
-# HiDPI/缩放异常时 Tk 工具栏图标会算出 0 尺寸，触发 PIL ValueError
-matplotlib.rcParams['toolbar'] = 'None'
-import matplotlib.pyplot as plt
 import mujoco.viewer
 import mujoco
 import numpy as np
@@ -78,6 +73,13 @@ class JointVelocityPlotter:
             window_s: 曲线滚动窗口长度 [s]
             refresh_every: 每多少个仿真步刷新一次绘图（10 步 = 20Hz）
         """
+        import matplotlib
+        matplotlib.use('TkAgg')  # 本机 Qt 的 xcb 插件不可用，强制使用 Tk 后端
+        # HiDPI/缩放异常时 Tk 工具栏图标会算出 0 尺寸，触发 PIL ValueError
+        matplotlib.rcParams['toolbar'] = 'None'
+        import matplotlib.pyplot as plt
+        self._plt = plt
+
         self.refresh_every = refresh_every
         # 数据每个仿真步都会存入缓冲区，按 dt 计算点数才能覆盖 window_s
         self.max_points = max(2, int(window_s / dt))
@@ -141,11 +143,11 @@ class JointVelocityPlotter:
             ax = self.axes[k // 2][k % 2]
             ax.relim()
             ax.autoscale_view()
-        plt.pause(0.001)
+        self._plt.pause(0.001)
 
     def close(self):
         if getattr(self, 'fig', None) is not None:
-            plt.close(self.fig)
+            self._plt.close(self.fig)
 
 
 class MujocoDeploy:
@@ -164,6 +166,11 @@ class MujocoDeploy:
             default=default_config,
             help="config file name in the config folder",
         )
+        parser.add_argument(
+            "--plot_joint_vel",
+            action="store_true",
+            help="enable realtime joint-velocity plot window (default: off)",
+        )
         args = parser.parse_args()
         self.config_file = resolve_config_path(args.config_file)
         with open(self.config_file, "r") as f:
@@ -174,6 +181,10 @@ class MujocoDeploy:
             print(f"config: {self.config_file}")
             print(f"xml: {self.xml_path}")
             print(f"policy: {self.policy_path}")
+
+            # 关节速度曲线: CLI --plot_joint_vel 或 yaml plot_joint_vel: true；默认关闭
+            self.plot_joint_vel = bool(args.plot_joint_vel or config.get("plot_joint_vel", False))
+            print(f"plot_joint_vel: {self.plot_joint_vel}")
 
             self.simulation_duration = config["simulation_duration"]
             self.simulation_dt = config["simulation_dt"]
@@ -188,7 +199,7 @@ class MujocoDeploy:
             self.ang_vel_scale = config["ang_vel_scale"]
             self.dof_pos_scale = config["dof_pos_scale"]
             self.dof_vel_scale = config["dof_vel_scale"]
-            self.action_scale = config["action_scale"]
+            self.action_scale = np.asarray(config["action_scale"], dtype=np.float32)
             self.cmd_scale = np.array(config["cmd_scale"], dtype=np.float32)
             self.vel_scale = config["vel_scale"]
             self.base_max_cmd = np.array(
@@ -500,10 +511,12 @@ class MujocoDeploy:
             pass
 
     def run_sim(self):
-        # 实时 16 关节速度曲线窗口（按四条腿分四张子图）
-        dq_plotter = JointVelocityPlotter(
-            dt=self.simulation_dt, window_s=10.0, refresh_every=10
-        )
+        # 实时关节速度曲线窗口（默认关闭；yaml plot_joint_vel 或 --plot_joint_vel 开启）
+        dq_plotter = None
+        if self.plot_joint_vel:
+            dq_plotter = JointVelocityPlotter(
+                dt=self.simulation_dt, window_s=10.0, refresh_every=10
+            )
         with mujoco.viewer.launch_passive(self.m, self.d) as viewer:
             self._setup_viewer_camera(viewer)
             start = time.time()
@@ -538,10 +551,11 @@ class MujocoDeploy:
 
                 viewer.sync()
 
-                # 实时更新关节速度曲线
-                dq_plotter.update(self.d.time, self.dof_vel)
+                if dq_plotter is not None:
+                    dq_plotter.update(self.d.time, self.dof_vel)
 
                 time_until_next_step = self.m.opt.timestep - (time.time() - step_start)
                 if time_until_next_step > 0:
                     time.sleep(time_until_next_step)
-        dq_plotter.close()
+        if dq_plotter is not None:
+            dq_plotter.close()

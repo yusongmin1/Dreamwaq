@@ -13,6 +13,25 @@ class B2W_Robot(M20_Robot):
     """
     def __init__(self, cfg: B2W_Cfg, sim_params, physics_engine, sim_device, headless):
         super().__init__(cfg, sim_params, physics_engine, sim_device, headless)
+        # B2W 专用: 按关节 action_scale 向量 (与 dof 顺序一致)
+        self.action_scale = torch.tensor(
+            self.cfg.control.action_scale, dtype=torch.float, device=self.device, requires_grad=False
+        )
+        print(f"###B2W action_scale: {self.action_scale.tolist()}")
+
+    def _compute_torques(self, actions):
+        """与 M20 相同, 但使用 B2W 按关节的 action_scale 向量。"""
+        dof_err = self.default_dof_pos - self.dof_pos
+        dof_err[:, self.wheel_indices] = 0
+        actions_scaled = actions * self.action_scale
+        actions_scaled[:, self.wheel_indices] = 0
+        vel_ref = torch.zeros_like(actions_scaled)
+        vel_tmp = actions * self.cfg.control.vel_scale
+        vel_ref[:, self.wheel_indices] = vel_tmp[:, self.wheel_indices]
+        torques = self.p_gains_multiplier * self.p_gains * (actions_scaled + dof_err) + \
+                  self.d_gains_multiplier * self.d_gains * (vel_ref - self.dof_vel)
+        torques *= self.torques_multiplier
+        return torch.clip(torques, -self.torque_limits, self.torque_limits)
 
     def _reward_dof_vel(self):
         # M20 的 clone 写法: 不污染 self.dof_vel, 观测保留真实轮速(policy 可利用轮速信息);

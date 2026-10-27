@@ -35,12 +35,19 @@ class B2W_Cfg(M20_Cfg_Yu):
         control_type = 'P'
         stiffness = {'hip_joint': 160., 'thigh_joint': 160., 'calf_joint': 160., 'foot_joint': 0.}  # [N*m/rad]
         damping   = {'hip_joint': 5., 'thigh_joint': 5., 'calf_joint': 5., 'foot_joint': 1.}     # [N*m*s/rad]
-        action_scale = 0.25
+        # B2W 专用按关节缩放: hip=0.125, thigh/calf/foot=0.25 (策略顺序 FL/FR/RL/RR)
+        action_scale = [
+            0.125, 0.25, 0.25, 0.25,
+            0.125, 0.25, 0.25, 0.25,
+            0.125, 0.25, 0.25, 0.25,
+            0.125, 0.25, 0.25, 0.25,
+        ]
         vel_scale = 10.0
         decimation = 4
-    # class terrain(M20_Cfg_Yu.terrain):
-    #     terrain_proportions = [0.15, 0.15, 0.3, 0.3, 0.1]
-    #     num_rows= 10 # number of terrain rows (levels)
+    class terrain(M20_Cfg_Yu.terrain):
+        terrain_proportions = [0.15, 0.15, 0.3, 0.3, 0.1]
+        num_rows = 10  # number of terrain rows (levels)
+        max_init_terrain_level = 9  # 必须 < num_rows, 否则 terrain_origins 索引越界
     class asset(M20_Cfg_Yu.asset):
         file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/b2w_description/urdf/b2w_description_fix.urdf'
         name = "b2w"
