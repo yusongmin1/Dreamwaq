@@ -122,55 +122,55 @@
     </body>
     <!-- terrain -->
     <!-- height platforms: 60cm-120cm, 5cm step, 2m x 2m, terrain start right side -->
-    <body name="height_platform_60" pos="36.0 -6.0 0.3000">
+    <body name="height_platform_60" pos="8.5 -4 0.3000">
       <geom name="height_platform_60_geom" type="box" size="1.0 1.0 0.3000" rgba="0.6 0.6 0.7 1"/>
       <geom name="height_platform_60_label" pos="0 0 0.3010" type="box" size="0.9 0.9 0.0001" quat="1 0 0 0" contype="0" conaffinity="0" group="1" material="mat_label_60" rgba="1 1 1 1"/>
     </body>
-    <body name="height_platform_65" pos="36.0 -8.0 0.3250">
+    <body name="height_platform_65" pos="8.5 -6 0.3250">
       <geom name="height_platform_65_geom" type="box" size="1.0 1.0 0.3250" rgba="0.6 0.6 0.7 1"/>
       <geom name="height_platform_65_label" pos="0 0 0.3260" type="box" size="0.9 0.9 0.0001" quat="1 0 0 0" contype="0" conaffinity="0" group="1" material="mat_label_65" rgba="1 1 1 1"/>
     </body>
-    <body name="height_platform_70" pos="36.0 -10.0 0.3500">
+    <body name="height_platform_70" pos="8.5 -8 0.3500">
       <geom name="height_platform_70_geom" type="box" size="1.0 1.0 0.3500" rgba="0.6 0.6 0.7 1"/>
       <geom name="height_platform_70_label" pos="0 0 0.3510" type="box" size="0.9 0.9 0.0001" quat="1 0 0 0" contype="0" conaffinity="0" group="1" material="mat_label_70" rgba="1 1 1 1"/>
     </body>
-    <body name="height_platform_75" pos="36.0 -12.0 0.3750">
+    <body name="height_platform_75" pos="8.5 -10 0.3750">
       <geom name="height_platform_75_geom" type="box" size="1.0 1.0 0.3750" rgba="0.6 0.6 0.7 1"/>
       <geom name="height_platform_75_label" pos="0 0 0.3760" type="box" size="0.9 0.9 0.0001" quat="1 0 0 0" contype="0" conaffinity="0" group="1" material="mat_label_75" rgba="1 1 1 1"/>
     </body>
-    <body name="height_platform_80" pos="36.0 -14.0 0.4000">
+    <body name="height_platform_80" pos="8.5 -12 0.4000">
       <geom name="height_platform_80_geom" type="box" size="1.0 1.0 0.4000" rgba="0.6 0.6 0.7 1"/>
       <geom name="height_platform_80_label" pos="0 0 0.4010" type="box" size="0.9 0.9 0.0001" quat="1 0 0 0" contype="0" conaffinity="0" group="1" material="mat_label_80" rgba="1 1 1 1"/>
     </body>
-    <body name="height_platform_85" pos="36.0 -16.0 0.4250">
+    <body name="height_platform_85" pos="8.5 -14 0.4250">
       <geom name="height_platform_85_geom" type="box" size="1.0 1.0 0.4250" rgba="0.6 0.6 0.7 1"/>
       <geom name="height_platform_85_label" pos="0 0 0.4260" type="box" size="0.9 0.9 0.0001" quat="1 0 0 0" contype="0" conaffinity="0" group="1" material="mat_label_85" rgba="1 1 1 1"/>
     </body>
-    <body name="height_platform_90" pos="36.0 -18.0 0.4500">
+    <body name="height_platform_90" pos="8.5 -16 0.4500">
       <geom name="height_platform_90_geom" type="box" size="1.0 1.0 0.4500" rgba="0.6 0.6 0.7 1"/>
       <geom name="height_platform_90_label" pos="0 0 0.4510" type="box" size="0.9 0.9 0.0001" quat="1 0 0 0" contype="0" conaffinity="0" group="1" material="mat_label_90" rgba="1 1 1 1"/>
     </body>
-    <body name="height_platform_95" pos="36.0 -20.0 0.4750">
+    <body name="height_platform_95" pos="8.5 -18 0.4750">
       <geom name="height_platform_95_geom" type="box" size="1.0 1.0 0.4750" rgba="0.6 0.6 0.7 1"/>
       <geom name="height_platform_95_label" pos="0 0 0.4760" type="box" size="0.9 0.9 0.0001" quat="1 0 0 0" contype="0" conaffinity="0" group="1" material="mat_label_95" rgba="1 1 1 1"/>
     </body>
-    <body name="height_platform_100" pos="36.0 -22.0 0.5000">
+    <body name="height_platform_100" pos="8.5 -20 0.5000">
       <geom name="height_platform_100_geom" type="box" size="1.0 1.0 0.5000" rgba="0.6 0.6 0.7 1"/>
       <geom name="height_platform_100_label" pos="0 0 0.5010" type="box" size="0.9 0.9 0.0001" quat="1 0 0 0" contype="0" conaffinity="0" group="1" material="mat_label_100" rgba="1 1 1 1"/>
     </body>
-    <body name="height_platform_105" pos="36.0 -24.0 0.5250">
+    <body name="height_platform_105" pos="8.5 -22 0.5250">
       <geom name="height_platform_105_geom" type="box" size="1.0 1.0 0.5250" rgba="0.6 0.6 0.7 1"/>
       <geom name="height_platform_105_label" pos="0 0 0.5260" type="box" size="0.9 0.9 0.0001" quat="1 0 0 0" contype="0" conaffinity="0" group="1" material="mat_label_105" rgba="1 1 1 1"/>
     </body>
-    <body name="height_platform_110" pos="36.0 -26.0 0.5500">
+    <body name="height_platform_110" pos="8.5 -24 0.5500">
       <geom name="height_platform_110_geom" type="box" size="1.0 1.0 0.5500" rgba="0.6 0.6 0.7 1"/>
       <geom name="height_platform_110_label" pos="0 0 0.5510" type="box" size="0.9 0.9 0.0001" quat="1 0 0 0" contype="0" conaffinity="0" group="1" material="mat_label_110" rgba="1 1 1 1"/>
     </body>
-    <body name="height_platform_115" pos="36.0 -28.0 0.5750">
+    <body name="height_platform_115" pos="8.5 -26 0.5750">
       <geom name="height_platform_115_geom" type="box" size="1.0 1.0 0.5750" rgba="0.6 0.6 0.7 1"/>
       <geom name="height_platform_115_label" pos="0 0 0.5760" type="box" size="0.9 0.9 0.0001" quat="1 0 0 0" contype="0" conaffinity="0" group="1" material="mat_label_115" rgba="1 1 1 1"/>
     </body>
-    <body name="height_platform_120" pos="36.0 -30.0 0.6000">
+    <body name="height_platform_120" pos="8.5 -28 0.6000">
       <geom name="height_platform_120_geom" type="box" size="1.0 1.0 0.6000" rgba="0.6 0.6 0.7 1"/>
       <geom name="height_platform_120_label" pos="0 0 0.6010" type="box" size="0.9 0.9 0.0001" quat="1 0 0 0" contype="0" conaffinity="0" group="1" material="mat_label_120" rgba="1 1 1 1"/>
     </body>

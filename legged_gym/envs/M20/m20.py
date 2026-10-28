@@ -368,7 +368,7 @@ class M20_Robot(BaseTask):
         if self.cfg.commands.heading_command:
             forward = quat_apply(self.base_quat, self.forward_vec)
             heading = torch.atan2(forward[:, 1], forward[:, 0])
-            self.commands[:, 2] = torch.clip(0.5*wrap_to_pi(self.commands[:, 3] - heading), -2., 2.)
+            self.commands[:, 2] = torch.clip(0.5*wrap_to_pi(self.commands[:, 3] - heading), -1., 1.)
         if self.cfg.terrain.measure_heights:
             self.measured_heights = self._get_heights()
         if self.cfg.domain_rand.push_robots and  (self.common_step_counter % self.cfg.domain_rand.push_interval == 0):
@@ -473,14 +473,17 @@ class M20_Robot(BaseTask):
         """ Random pushes the robots. Emulates an impulse by setting a randomized base velocity.
         """
         max_vel = self.cfg.domain_rand.max_push_vel_xy
+        max_push_angular = self.cfg.domain_rand.max_push_ang_vel
         if self.cfg.terrain.mesh_type in ["heightfield", "trimesh"]:
-            # 高台 env 不施加推力: 速度保持原值不改动, 只随机化非高台 env
+            # 高台 env 不施加推力: 线速度/角速度都保持原值不改动, 只随机化非高台 env
             is_hp = self.terrain_types >= self.highplatform_col_min
             push_ids = (~is_hp).nonzero(as_tuple=False).flatten()
             if len(push_ids) > 0:
                 self.root_states[push_ids, 7:9] = torch_rand_float(-max_vel, max_vel, (len(push_ids), 2), device=self.device)
-        # else:
-        #     self.root_states[:, 7:9] = torch_rand_float(-max_vel, max_vel, (self.num_envs, 2), device=self.device)
+                self.root_states[push_ids, 10:13] = torch_rand_float(-max_push_angular, max_push_angular, (len(push_ids), 3), device=self.device) # ang vel
+        else:
+            self.root_states[:, 7:9] = torch_rand_float(-max_vel, max_vel, (self.num_envs, 2), device=self.device)
+            self.root_states[:, 10:13] = torch_rand_float(-max_push_angular, max_push_angular, (self.num_envs, 3), device=self.device) # ang vel
         self.gym.set_actor_root_state_tensor(self.sim, gymtorch.unwrap_tensor(self.root_states))
 
     def _update_terrain_curriculum(self, env_ids):
@@ -1009,9 +1012,6 @@ class M20_Robot(BaseTask):
         # Tracking of angular velocity commands (yaw); disabled on highplatform (use highplatform_yaw instead)
         ang_vel_error = torch.square(self.commands[:, 2] - self.base_ang_vel[:, 2])
         reward = torch.exp(-ang_vel_error/self.cfg.rewards.tracking_sigma)
-        # if self.cfg.terrain.mesh_type in ["heightfield", "trimesh"]:
-        #     is_hp = self.terrain_types >= self.highplatform_col_min
-        #     reward = reward * (~is_hp).float()
         return reward
 
     def _reward_stand_still(self):
@@ -1058,76 +1058,3 @@ class M20_Robot(BaseTask):
         commanded_heading = self.commands[:, 3]
         heading_error = wrap_to_pi(commanded_heading - actual_heading)
         return torch.square(heading_error) * is_hp.float()
-
-    # def _reward_highplatform_height(self):
-    #     """高台上基座世界系高度超过阈值时给奖励(鼓励不上掉坑)。"""
-    #     if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
-    #         return torch.zeros(self.num_envs, device=self.device)
-    #     is_hp = self.terrain_types >= self.highplatform_col_min
-    #     above = self.root_states[:, 2] > self.cfg.rewards.highplatform_height_threshold
-    #     return above.float() * is_hp.float()
-
-    # def _reward_highplatform_front_force(self):
-    #     """高台上: 前轮高于z=0、后轮低于z=0、且前轮垂直接触力均超阈值 -> 奖励(攀爬姿态)。"""
-    #     if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
-    #         return torch.zeros(self.num_envs, device=self.device)
-    #     is_hp = self.terrain_types >= self.highplatform_col_min
-    #     front_z = self.rigid_body_states[:, self.front_feet_indices, 2]
-    #     rear_z = self.rigid_body_states[:, self.rear_feet_indices, 2]
-    #     pose_ok = torch.all(front_z > 0., dim=1) & torch.all(rear_z < 0., dim=1)
-    #     front_fz = self.contact_forces[:, self.front_feet_indices, 2]
-    #     force_ok = torch.all(front_fz > self.cfg.rewards.highplatform_front_force_threshold, dim=1)
-    #     return (pose_ok & force_ok & is_hp).float()
-
-    # def _reward_highplatform_front_wheel_height_diff(self):
-    #     """高台上惩罚左右前轮世界系高度差超过阈值(默认0.25m)。"""
-    #     if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
-    #         return torch.zeros(self.num_envs, device=self.device)
-    #     is_hp = self.terrain_types >= self.highplatform_col_min
-    #     front_z = self.rigid_body_states[:, self.front_feet_indices, 2]
-    #     height_diff = torch.abs(front_z[:, 0] - front_z[:, 1])
-    #     excess = torch.clamp(height_diff - self.cfg.rewards.highplatform_front_wheel_height_diff_threshold, min=0.)
-    #     return excess * is_hp.float()
-
-    # def _reward_highplatform_world_vel(self):
-    #     """Penalize excessive world-frame linear speed on highplatform."""
-    #     if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
-    #         return torch.zeros(self.num_envs, device=self.device)
-    #     is_hp = self.terrain_types >= self.highplatform_col_min
-    #     world_speed = torch.abs(self.root_states[:, 9])
-    #     excess = torch.clamp(world_speed - self.cfg.rewards.highplatform_world_speed_limit, min=0.)
-    #     return torch.square(excess) * is_hp.float()
-
-    # def _reward_highplatform_leg_dof_vel(self):
-    #     """高台地形上惩罚四条腿关节（不含轮子）速度超过限值。"""
-    #     if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
-    #         return torch.zeros(self.num_envs, device=self.device)
-    #     is_hp = self.terrain_types >= self.highplatform_col_min
-    #     leg_vel = self.dof_vel.clone()
-    #     leg_vel[:, self.wheel_indices] = 0.
-    #     excess = torch.clamp(torch.abs(leg_vel) - self.cfg.rewards.highplatform_leg_dof_vel_limit, min=0.)
-    #     return torch.sum(torch.square(excess), dim=1) * is_hp.float()
-
-    def _reward_wheel_dof_vel(self):
-        """所有地形上惩罚轮子速度超过限值。"""
-        wheel_vel = self.dof_vel[:, self.wheel_indices]
-        excess = torch.clamp(torch.abs(wheel_vel) - self.cfg.rewards.wheel_dof_vel_limit, min=0.)
-        return torch.sum(torch.abs(excess), dim=1)
-
-    # def _reward_highplatform_stuck_nofront(self):
-    #     """高台上"卡住"时刻(命令平面速度>0.4 但实际平面速度<0.25)且前两条腿
-    #     不是全部接触地面 -> 惩罚, 促使卡住时前腿先落回台阶面找支撑。"""
-    #     if self.cfg.terrain.mesh_type not in ["heightfield", "trimesh"]:
-    #         return torch.zeros(self.num_envs, device=self.device)
-    #     rew = self.cfg.rewards
-    #     is_hp = self.terrain_types >= self.highplatform_col_min
-    #     cmd_speed = torch.norm(self.commands[:, :2], dim=1)
-    #     actual_speed = torch.norm(self.base_lin_vel[:, :2], dim=1)
-    #     stuck = (cmd_speed > rew.highplatform_stuck_cmd_threshold) & \
-    #             (actual_speed < rew.highplatform_stuck_vel_threshold)
-    #     # 前两腿(feet_indices[0]=FL, [1]=FR)全部接触: 接触力全方向范数 > 1N
-    #     front_all_contact = torch.all(
-    #         torch.norm(self.contact_forces[:, self.feet_indices[:2], :], dim=-1) > 1., dim=1)
-    #     bad = is_hp & stuck & (~front_all_contact)
-    #     return bad.float()
-

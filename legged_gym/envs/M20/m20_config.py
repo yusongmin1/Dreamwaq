@@ -46,12 +46,12 @@ class M20_Cfg_Yu(BaseConfig):
         heading_command = True # if true: compute ang vel command from heading error
         class ranges:
             lin_vel_x = [-1.0,1.0] # min max [m/s]
-            lin_vel_y = [-1.0,1.0]   # min max [m/s]
+            lin_vel_y = [-0.8,0.8]   # min max [m/s]
             ang_vel_yaw = [-1, 1]    # min max [rad/s]
             heading = [-3.14, 3.14]
         class highplatform:
             lin_vel_x_neg = [-1.0, -0.35]  # 反向 min max [m/s]
-            lin_vel_x_pos = [0.35, 1.0]    # 正向 min max [m/s]
+            lin_vel_x_pos = [0.0, 1.0]    # 正向 min max [m/s]
             lin_vel_y = [0.0, 0.0]   # forward only
             heading = [-0.0, 0.0]  # -10 deg to 10 deg [rad], resampled to commands[:, 3]
             max_heading_error = 0.5236  # 高台上与命令朝向误差超过此值(30度, rad)直接终止
@@ -129,9 +129,9 @@ class M20_Cfg_Yu(BaseConfig):
         randomize_base_com = True
         added_base_com_range = [-0.05, 0.05]
         randomize_pd_gains = True
-        stiffness_multiplier_range = [0.85, 1.15]  
-        damping_multiplier_range = [0.85, 1.15]     
-        torque_multiplier_range=[0.85, 1.15]  
+        stiffness_multiplier_range = [0.9, 1.1]  
+        damping_multiplier_range = [0.9, 1.1]     
+        torque_multiplier_range=[0.8, 1.2]  
 
         randomize_motor_zero_offset = True
         motor_zero_offset_range = [-0.035, 0.035] # Offset to add to the motor angles
@@ -146,7 +146,7 @@ class M20_Cfg_Yu(BaseConfig):
             ang_vel_xy = -0.05 # 惩罚机器人在X轴和Y轴上的角速度 对应现象为遏制机器人左右晃动和前后晃动
             orientation = -0.2 # 强烈鼓励机器人与初始姿态的基座方向一致
             base_height=-5.0
-            torques = -0.00005#
+            torques = -0.00004#
             dof_vel = -1e-3
             dof_acc = -2.5e-7
             collision = -1.
@@ -156,26 +156,16 @@ class M20_Cfg_Yu(BaseConfig):
             dof_pos_limits = -5.0
             dof_vel_limits=-10.0
             hip_default = -0.25
-            run_still=-0.1
+            run_still=-0.15
             highplatform_yaw = -3.5
-            # highplatform_height = 1.0 # 高台基座高度>阈值奖励(不上掉坑)
-            # highplatform_front_force = 1.5 # 高台前轮上台+前轮垂直接触力达标奖励
-            # highplatform_front_wheel_height_diff = -2.0 # 高台左右前轮高度差>0.25m惩罚
             # highplatform_world_vel = -10.0 # 高台世界系线速度>0.75时大惩罚
-            # highplatform_stuck_nofront = -5.0 # 高台上卡住(命令>0.4但实际<0.25)且前两腿未全部触地的惩罚
         only_positive_rewards = False # if true negative total rewards are clipped at zero (avoids early termination problems)
         tracking_sigma = 0.25 # tracking reward = exp(-error^2/sigma)
         highplatform_world_speed_limit = 0.75 # [m/s] world-frame linear speed limit on highplatform
-        wheel_dof_vel_limit = 25.0 # [rad/s] 轮子速度限值
-        highplatform_stuck_cmd_threshold = 0.4 # [m/s] 高台"卡住"判定的命令平面速度阈值
-        highplatform_stuck_vel_threshold = 0.25 # [m/s] 高台"卡住"判定的实际平面速度阈值
-        highplatform_height_threshold = 0.3 # [m] 高台基座世界系高度奖励阈值
-        highplatform_front_force_threshold = 120.0 # [N] 高台前轮垂直接触力阈值
-        highplatform_front_wheel_height_diff_threshold = 0.25 # [m] 高台左右前轮高度差惩罚阈值
         soft_dof_pos_limit = 0.9 # percentage of urdf limits, values above this limit are penalized
         soft_dof_vel_limit = 0.95
         soft_torque_limit = 0.9
-        base_height_target = 0.52
+        base_height_target = 0.55
         max_contact_force = 200. # forces above this value are penalized
 
     class normalization:

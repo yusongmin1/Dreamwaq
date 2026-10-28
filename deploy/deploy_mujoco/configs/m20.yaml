@@ -45,5 +45,7 @@ num_actions: 16
 num_obs: 57
 num_obs_hist: 5
 init_base_height: 1.0
+# 出生在 scene_box55(x=6,y=0,55cm高)右侧, 60~120cm 高台列已挪至 x=8.5, y=-4..-28
+init_base_pos: [8.5, 0.0]
 
 wheel_sim_indices: [3, 7, 11, 15]

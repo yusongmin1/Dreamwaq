@@ -216,6 +216,10 @@ class MujocoDeploy:
             self.num_obs = config["num_obs"]
             self.num_obs_hist = config.get("num_obs_hist", 5)
             self.init_base_height = config.get("init_base_height", None)
+            self.init_base_pos = config.get("init_base_pos", None)  # [x, y] 初始出生位置(世界系)
+            # 稳定性限制: 摔倒数值发散(NaN/Inf 或关节速度超阈)时自动重置回初始位置
+            self.auto_reset = config.get("auto_reset", True)
+            self.diverge_reset_vel = config.get("diverge_reset_vel", 100.0)  # [rad/s]
 
             self.wheel_indices = config["wheel_sim_indices"]
             self.zero_wheel_vel_obs = config.get("zero_wheel_vel_obs", False)
@@ -428,6 +432,8 @@ class MujocoDeploy:
     def _reset_robot_state(self):
         if self.init_base_height is not None:
             self.d.qpos[2] = self.init_base_height
+        if self.init_base_pos is not None:
+            self.d.qpos[0:2] = np.array(self.init_base_pos, dtype=np.float64)
         self.d.qpos[3:7] = np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float64)
         self.d.qpos[7 : 7 + self.num_actions] = self._policy_to_mujoco(self.default_angles)
         self.d.qvel[:] = 0.0
@@ -468,6 +474,8 @@ class MujocoDeploy:
         torques = self.kps * (actions_scaled + dof_err) + self.kds * (
             vel_ref - self.dof_vel
         )
+        # NaN 保护: clip 对 NaN 不生效, 先清洗再限幅 (发散会在下一步被 _check_diverged 捕获重置)
+        torques = np.nan_to_num(torques, nan=0.0, posinf=0.0, neginf=0.0)
         return np.clip(torques, -self.torque_limits, self.torque_limits)
 
     def apply_torques(self, torques):
@@ -510,6 +518,24 @@ class MujocoDeploy:
         except AttributeError:
             pass
 
+    def _check_diverged(self):
+        """稳定性限制: 摔倒后数值发散(NaN/Inf 或关节速度爆炸)时, 自动把机器人重置回初始位置。
+        返回 True 表示本步已重置, 调用方应跳过本步的力矩计算/推理。"""
+        if not self.auto_reset:
+            return False
+        qpos_ok = np.isfinite(self.d.qpos).all()
+        qvel_ok = np.isfinite(self.d.qvel).all()
+        vel_max = np.abs(self.d.qvel[6:]).max() if qvel_ok else np.inf
+        if qpos_ok and qvel_ok and vel_max <= self.diverge_reset_vel:
+            return False
+        print(f"[t={self.d.time:.2f}s] 仿真发散({'NaN/Inf' if not (qpos_ok and qvel_ok) else f'关节速度 {vel_max:.0f} rad/s'}, "
+              f"自动重置到初始位置 {getattr(self, 'init_base_pos', None)} h={getattr(self, 'init_base_height', None)}")
+        self._reset_robot_state()
+        self.obs_hist_buf.fill(0.0)  # 历史清零, 避免污染 policy 输入
+        self.obs.fill(0.0)
+        self.action[:] = 0.0
+        return True
+
     def run_sim(self):
         # 实时关节速度曲线窗口（默认关闭；yaml plot_joint_vel 或 --plot_joint_vel 开启）
         dq_plotter = None
@@ -526,6 +552,14 @@ class MujocoDeploy:
 
                 if self.counter % self.control_decimation == 0:
                     self._update_command()
+
+                # 发散检测: 摔倒导致 NaN/速度爆炸时自动复位, 跳过本步
+                if self._check_diverged():
+                    viewer.sync()
+                    time_until_next_step = self.m.opt.timestep - (time.time() - step_start)
+                    if time_until_next_step > 0:
+                        time.sleep(time_until_next_step)
+                    continue
 
                 tau = self.compute_torques(self.action)
                 self.apply_torques(tau)
